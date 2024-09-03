@@ -1,6 +1,6 @@
 const GoogleStrategy = require('passport-google-oauth2').Strategy;
 
-function initialize(passport, getUserByEmail, getUserById) {
+function initialize(passport, getUserByEmail, getUserById, saveUser) {
     
     // Google OAuth 2.0 Strategy
     passport.use(new GoogleStrategy({
@@ -15,7 +15,11 @@ function initialize(passport, getUserByEmail, getUserById) {
             
             // If the user doesn't exist, create a new one
             if (!user) {
-                user = await saveUser(profile.displayName, profile.emails[0].value, null);
+                user = await saveUser(profile.displayName, profile.emails[0].value, null, profile.id);
+            } else if (!user.googleId) {
+                // If user exists but doesn't have a googleId, update the user
+                user.googleId = profile.id;
+                await user.save();
             }
             
             // Pass the user to the done callback

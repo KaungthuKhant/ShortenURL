@@ -17,10 +17,17 @@ const User = require("./Users")
 
 mongoose.connect("mongodb://localhost/ShortURLPractice")
 
-async function saveUser(namePara, emailPara, passPara){
-    const user = new User({schemaType: "User", name: namePara, email: emailPara, password: passPara})
+async function saveUser(namePara, emailPara, passPara, googleIdPara) {
+    const user = new User({
+        schemaType: "User",
+        name: namePara,
+        email: emailPara,
+        password: passPara,
+        googleId: googleIdPara
+    })
     await user.save()
     console.log(user)
+    return user
 }
 
 async function saveLink(fullLink, shortLink, clicksParam, emailParam){
@@ -63,7 +70,8 @@ initializePassport(
     passport, 
     //emailK => User.findOne({ email: emailK }).exec(),
     findByEmail,
-    id => User.findById(id)
+    id => User.findById(id),
+    saveUser
 )
 //const users = []
 
@@ -104,7 +112,7 @@ app.post('/register', checkNotAuthenticated, async (req, res) =>{
     // so req.body.password will look for name="password"
     try{
         const hashedPassword = await bcrypt.hash(req.body.password, 10)
-        saveUser(req.body.name, req.body.email, hashedPassword) // new code 
+        saveUser(req.body.name, req.body.email, hashedPassword, null) // new code 
         /*
         users.push({
             id: Date.now().toString(), 
