@@ -1,7 +1,28 @@
+const LocalStrategy = require('passport-local').Strategy;
 const GoogleStrategy = require('passport-google-oauth2').Strategy;
+const bcrypt = require('bcrypt');
 
 function initialize(passport, getUserByEmail, getUserById, saveUser) {
     
+    // Local Strategy
+    passport.use(new LocalStrategy({ usernameField: 'email' }, async (email, password, done) => {
+        try {
+            const user = await getUserByEmail(email);
+            if (!user) {
+                return done(null, false, { message: 'No user with that email' });
+            }
+
+            const isMatch = await bcrypt.compare(password, user.password);
+            if (!isMatch) {
+                return done(null, false, { message: 'Password incorrect' });
+            }
+
+            return done(null, user);
+        } catch (err) {
+            return done(err);
+        }
+    }));
+
     // Google OAuth 2.0 Strategy
     passport.use(new GoogleStrategy({
         clientID: process.env.GOOGLE_CLIENT_ID,
@@ -10,19 +31,14 @@ function initialize(passport, getUserByEmail, getUserById, saveUser) {
     },
     async (accessToken, refreshToken, profile, done) => {
         try {
-            // Check if the user already exists in the database
             let user = await getUserByEmail(profile.emails[0].value);
-            
-            // If the user doesn't exist, create a new one
             if (!user) {
                 user = await saveUser(profile.displayName, profile.emails[0].value, null, profile.id);
             } else if (!user.googleId) {
-                // If user exists but doesn't have a googleId, update the user
                 user.googleId = profile.id;
                 await user.save();
             }
-            
-            // Pass the user to the done callback
+
             return done(null, user);
         } catch (err) {
             return done(err, false);
