@@ -1,32 +1,50 @@
-const mongoose = require("mongoose")
-
-
-const linkSchema = new mongoose.Schema({
-    longLink: String,
-    shortLink: String,
-    count: Number
-})
-
-
-/**
- * email: {
-        type: String,
-        required: true,
-        lowercase: true,
-    },
- */
+const mongoose = require("mongoose");
 
 const userSchema = new mongoose.Schema({
     schemaType: {
         type: String,
-        require: true,
+        required: true,
     },
-    name: String,
-    email: String,
-    password: String,
-    fullUrl: String,
-    shortUrl: String,
-    clicks: Number,
+    name: {
+        type: String,
+        required: function () {
+            return this.schemaType === "User";
+        }
+    },
+    email: {
+        type: String,
+        required: function () {
+            return this.schemaType === "User";
+        },
+        lowercase: true,
+    },
+    password: {
+        type: String,
+        required: function () {
+            return this.schemaType === "User" && !this.googleId;
+        },
+        // Password will be optional if using Google OAuth (i.e., if googleId exists)
+    },
+    googleId: {
+        type: String,
+        required: false, // Optional, only for Google OAuth users
+    },
+    fullUrl: {
+        type: String,
+        required: function () {
+            return this.schemaType === "Links";
+        }
+    },
+    shortUrl: {
+        type: String,
+        required: function () {
+            return this.schemaType === "Links";
+        }
+    },
+    clicks: {
+        type: Number,
+        default: 0
+    },
     createdAt: {
         type: Date,
         immutable: true,
@@ -36,6 +54,12 @@ const userSchema = new mongoose.Schema({
         type: Date,
         default: () => Date.now(),
     }
-})
+});
 
-module.exports = mongoose.model("User", userSchema)
+// Middleware to update the updatedAt field before saving
+userSchema.pre('save', function (next) {
+    this.updatedAt = Date.now();
+    next();
+});
+
+module.exports = mongoose.model("User", userSchema);
