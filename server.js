@@ -67,8 +67,7 @@ async function findFullUrl(shortUrlParam){
 
 const initializePassport = require('./passport-config')
 initializePassport(
-    passport, 
-    //emailK => User.findOne({ email: emailK }).exec(),
+    passport,
     findByEmail,
     id => User.findById(id),
     saveUser
