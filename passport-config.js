@@ -33,6 +33,7 @@ module.exports = initialize
 /**
  * NOTE: Understanding the passport.serializeUser and deserializeUser 
  * Stackoverflow link for that https://stackoverflow.com/questions/27637609/understanding-passport-serialize-deserialize
+ * https://stackoverflow.com/questions/45428107/what-does-passport-js-do-and-why-we-need-it
  */
 
 
