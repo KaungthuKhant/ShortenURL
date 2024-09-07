@@ -86,6 +86,8 @@ app.use(session({
 app.use(passport.initialize())
 app.use(passport.session())
 app.use(methodOverride('_method'))
+app.use(express.static('public'));
+
 
 app.get('/', checkAuthenticated, async (req, res) =>{
     let links = await findLinksByEmail(req.user.email)
@@ -161,12 +163,6 @@ app.get('/:shortUrl', async (req, res) => {
 
 })
 
-/*
-app.delete('/logout', (req, res) => {
-    req.logOut()
-    res.redirect('/login')
-})
-*/
 app.delete('/logout', function(req, res, next) {
     req.logOut(function(err){
         if (err) { return next(err); }
