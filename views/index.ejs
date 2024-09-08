@@ -14,24 +14,25 @@
         
         <form action="/shortUrls" method="POST" class="my-4 w-100">
             <div class="row g-3 align-items-center">
-                <!-- URL input -->
-                <div class="col">
+                <!-- URL input (taking up 8 columns out of 12) -->
+                <div class="col-8">
                     <label for="fullUrl" class="visually-hidden">Url</label>
                     <input required placeholder="Url" type="url" name="fullUrl" id="fullUrl" class="form-control">
                 </div>
-
-                <!-- Short URL input -->
-                <div class="col">
+        
+                <!-- Short URL input (taking up 2 columns out of 12) -->
+                <div class="col-2">
                     <label for="shortUrl" class="visually-hidden">Short URL</label>
                     <input placeholder="Short Url" name="shortUrl" id="shortUrl" class="form-control">
                 </div>
-
-                <!-- Submit button -->
-                <div class="col-auto">
-                    <button class="btn btn-success" type="submit">Shorten</button>
-                </div>
+        
+                <!-- Submit button (taking up 2 columns out of 12) -->
+                <div class="col-2 d-flex align-items-center py-2">
+                    <button class="btn btn-success w-100 form-control" type="submit">Shorten</button>
+                </div>                
             </div>
         </form>
+        
         
         <!-- The rest of your content remains unchanged -->
         <table class="table table-striped table-responsive">
