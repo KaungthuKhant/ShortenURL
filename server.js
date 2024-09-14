@@ -81,7 +81,6 @@ app.use(session({
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false
-
 }))
 app.use(passport.initialize())
 app.use(passport.session())
@@ -129,9 +128,14 @@ app.post('/register', checkNotAuthenticated, async (req, res) =>{
     }
 })
 
+
 app.get('/auth/google',
-    passport.authenticate('google', { scope: ['profile', 'email'] })
+    passport.authenticate('google', { 
+        scope: ['profile', 'email'],
+        max_age: 2592000 // 30 days in seconds
+    })
 );
+
 
 app.get('/auth/google/callback', 
     passport.authenticate('google', { failureRedirect: '/login' }),
@@ -140,7 +144,6 @@ app.get('/auth/google/callback',
         res.redirect('/');
     }
 );
-
 
 app.post('/shortUrls', async (req, res) =>{
     let short = req.body.shortUrl
@@ -163,13 +166,21 @@ app.get('/:shortUrl', async (req, res) => {
 
 })
 
+
 app.delete('/logout', function(req, res, next) {
     req.logOut(function(err){
         if (err) { return next(err); }
         res.redirect('/login')
     })
 })
-
+ 
+/*
+app.get('/logout', (req, res) =>{
+    console.log("Loggin out");
+    req.logout();
+    res.redirect('/')
+})
+*/
 function checkAuthenticated(req, res, next){
     if (req.isAuthenticated()){
         return next()
@@ -186,3 +197,4 @@ function checkNotAuthenticated(req, res, next){
 }
 
 app.listen(8800)
+console.info("Listening on port 8800")
