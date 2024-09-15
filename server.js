@@ -10,6 +10,8 @@ const flash = require('express-flash')
 const session = require('express-session')
 const methodOverride = require('method-override')
 const shortId = require('shortid')
+const nodemailer = require('nodemailer');
+const config = require('./config');
 
 // mongodb requires
 const mongoose = require("mongoose")
@@ -74,7 +76,7 @@ initializePassport(
 )
 //const users = []
 
-app.set('view-engine', 'ejs')
+app.set('view engine', 'ejs')
 app.use(express.urlencoded({ extended: false}))
 app.use(flash())
 app.use(session({
@@ -111,22 +113,60 @@ app.post('/register', checkNotAuthenticated, async (req, res) =>{
     // this req.body.name correspond to the name field of <input type="password" id="password" name="password" required>
     // so req.body.password will look for name="password"
     try{
+
+        // check if email is already used
+        console.log("checking to see if the email is already registered")
+        const user = await findByEmail(req.body.email);
+        console.log("user: " + user); 
+        if (user != null){
+            console.log("user exists")
+            res.render('register', { message: "Email already used" })
+            return;
+        }
+        console.log("user does not exist, hashing the password and saveing the user")
+
+        // hash the password
         const hashedPassword = await bcrypt.hash(req.body.password, 10)
         saveUser(req.body.name, req.body.email, hashedPassword, null) // new code 
-        /*
-        users.push({
-            id: Date.now().toString(), 
-            name: req.body.name, 
-            email: req.body.email,
-            password: hashedPassword
-        })
-        */
-        res.redirect('/login')
+
+        // Send confirmation email
+        sendConfirmationEmail(req.body.email);
+
+        res.redirect('/confirmation');
     }
     catch {
+        console.log("error in the post /register route")
         res.redirect('/register')
     }
 })
+
+
+
+app.get('/confirmation', (req, res) => {
+    res.render('confirmation');
+});
+  
+app.get('/confirm/:email', async (req, res) => {
+    try {
+        console.log("searching with email: " + req.params.email)
+        const user = await User.findOne({ email: req.params.email });
+
+        if (!user) {
+        return res.status(404).send('User not found');
+        }
+
+        // Update user's confirmation status
+        user.isConfirmed = true;
+
+        // Save the updated user document
+        await user.save();
+
+        res.redirect('/login');
+    } catch (error) {
+        console.error(error);
+        res.status(500).send('Internal Server Error');
+    }
+});
 
 
 app.get('/auth/google',
@@ -194,6 +234,35 @@ function checkNotAuthenticated(req, res, next){
         return res.redirect('/')
     }
     next()
+}
+
+
+// Nodemailer configuration
+const transporter = nodemailer.createTransport({
+    service: config.email.service,
+    auth: {
+      user: config.email.user,
+      pass: config.email.pass,
+    },
+});
+
+function sendConfirmationEmail(recipientEmail) {
+    console.log("sending confirmation email to: " + recipientEmail);
+    const confirmationUrl = `http://localhost:${config.server.port}/confirm/${recipientEmail}`;
+
+    const mailOptions = {
+        from: config.email.user,
+        to: recipientEmail,
+        subject: 'Confirm your email address',
+        text: `Click on the following link to confirm your email address: ${confirmationUrl}`,
+    };
+
+    transporter.sendMail(mailOptions, (error) => {
+        if (error) {
+        console.error(error);
+        }
+        console.log('Email sent: ' + info.response);
+    });
 }
 
 app.listen(8800)
