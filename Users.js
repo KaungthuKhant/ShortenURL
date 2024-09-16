@@ -58,7 +58,11 @@ const userSchema = new mongoose.Schema({
     isConfirmed: { 
         type: Boolean, 
         default: false 
+    },
+    confirmationID: {
+        type: String,
     }
+
 });
 
 // Middleware to update the updatedAt field before saving

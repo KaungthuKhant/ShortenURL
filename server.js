@@ -113,6 +113,11 @@ app.post('/register', checkNotAuthenticated, async (req, res) =>{
     // this req.body.name correspond to the name field of <input type="password" id="password" name="password" required>
     // so req.body.password will look for name="password"
     try{
+        // check if password is valid
+        if (!checkPassword(req.body.password)){
+            res.render('register', { message: "Password is not valid. Password must contain at least one uppercase letter, one lowercase letter, one number and 8 or more characters." })
+            return;
+        }
 
         // check if email is already used
         console.log("checking to see if the email is already registered")
@@ -263,6 +268,23 @@ function sendConfirmationEmail(recipientEmail) {
         }
         console.log('Email sent: ' + info.response);
     });
+}
+
+
+function checkPassword(password){
+    if (password.length < 8) {
+        return false
+    }
+    if (!password.match(/[a-z]/g)){
+        return false
+    }
+    if (!password.match(/[A-Z]/g)){
+        return false
+    }
+    if (!password.match(/[0-9]/g)){
+        return false
+    }
+    return true
 }
 
 app.listen(8800)

@@ -25,6 +25,10 @@
             </div>
             <div>
                 <label for="password">Password</label>
+                <%# we will check if message variable is defined in local scope. If defined, display the message. If not, do nothing.%>
+                <% if (locals.message) { %>
+                    <p class="error"><%= locals.message %></p>
+                <% } %>
                 <input type="password" id="password" name="password" required>
             </div>
             <button type="submit">Register</button>
