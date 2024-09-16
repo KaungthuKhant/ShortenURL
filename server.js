@@ -12,6 +12,7 @@ const methodOverride = require('method-override')
 const shortId = require('shortid')
 const nodemailer = require('nodemailer');
 const config = require('./config');
+const crypto = require('crypto');
 
 // mongodb requires
 const mongoose = require("mongoose")
@@ -20,16 +21,18 @@ const User = require("./Users")
 mongoose.connect("mongodb://localhost/ShortURLPractice")
 
 async function saveUser(namePara, emailPara, passPara, googleIdPara) {
+    const randomID = Math.random().toString(36).substr(2, 9); // generate a random ID
     const user = new User({
         schemaType: "User",
         name: namePara,
         email: emailPara,
         password: passPara,
-        googleId: googleIdPara
+        googleId: googleIdPara,
+        confirmationID: randomID // save the random ID to the user document
     })
     await user.save()
     console.log(user)
-    return user
+    return { user, randomID }; // return the user and the random ID
 }
 
 async function saveLink(fullLink, shortLink, clicksParam, emailParam){
@@ -132,10 +135,10 @@ app.post('/register', checkNotAuthenticated, async (req, res) =>{
 
         // hash the password
         const hashedPassword = await bcrypt.hash(req.body.password, 10)
-        saveUser(req.body.name, req.body.email, hashedPassword, null) // new code 
+        const { userObj, randomID } = await saveUser(req.body.name, req.body.email, hashedPassword, null)
 
         // Send confirmation email
-        sendConfirmationEmail(req.body.email);
+        sendConfirmationEmail(req.body.email, randomID);
 
         res.redirect('/confirmation');
     }
@@ -151,10 +154,10 @@ app.get('/confirmation', (req, res) => {
     res.render('confirmation');
 });
   
-app.get('/confirm/:email', async (req, res) => {
+app.get('/confirm/:randomID', async (req, res) => {
     try {
-        console.log("searching with email: " + req.params.email)
-        const user = await User.findOne({ email: req.params.email });
+        console.log("searching with randomID: " + req.params.randomID)
+        const user = await User.findOne({ confirmationID: req.params.randomID });
 
         if (!user) {
         return res.status(404).send('User not found');
@@ -167,12 +170,59 @@ app.get('/confirm/:email', async (req, res) => {
         await user.save();
 
         res.redirect('/login');
-    } catch (error) {
-        console.error(error);
-        res.status(500).send('Internal Server Error');
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Error confirming email');
     }
 });
 
+
+app.get('/forgot-password', (req, res) => {
+    res.render('forgot-password');
+});
+
+
+app.post('/forgot-password', forgotPassword);
+
+
+app.get('/reset-password/:id', (req, res) => {
+    const { id } = req.params;
+    res.render('reset-password', { id });
+});
+
+app.post('/reset-password', resetPassword);
+
+/*
+app.get('/reset-password/:id', async (req, res) => {
+    const { id } = req.params;
+    const user = await User.findOne({ confirmationID: id });
+    if (!user) {
+        res.status(404).send('User not found');
+        return;
+    }
+    res.render('reset-password', { user });
+});
+
+app.get('/reset-password', (req, res) => {
+    res.render('reset-password');
+});
+
+app.post('/reset-password', async (req, res) => {
+    const { id, password, confirmPassword } = req.body;
+    if (password !== confirmPassword) {
+      res.status(400).send('Passwords do not match');
+      return;
+    }
+    const user = await User.findOne({ confirmationID: id });
+    if (!user) {
+      res.status(404).send('User not found');
+      return;
+    }
+    user.password = password;
+    await user.save();
+    res.send('Password reset successfully');
+});
+*/
 
 app.get('/auth/google',
     passport.authenticate('google', { 
@@ -251,9 +301,9 @@ const transporter = nodemailer.createTransport({
     },
 });
 
-function sendConfirmationEmail(recipientEmail) {
+function sendConfirmationEmail(recipientEmail, randomID) {
     console.log("sending confirmation email to: " + recipientEmail);
-    const confirmationUrl = `http://localhost:${config.server.port}/confirm/${recipientEmail}`;
+    const confirmationUrl = `http://localhost:${config.server.port}/confirm/${randomID}`;
 
     const mailOptions = {
         from: config.email.user,
@@ -286,6 +336,54 @@ function checkPassword(password){
     }
     return true
 }
+
+
+async function forgotPassword(req, res) {
+    const { email } = req.body;
+    const user = await User.findOne({ email });
+    if (!user) {
+      res.status(404).send('User not found');
+      return;
+    }
+    const randomID = crypto.randomBytes(32).toString('hex');
+    user.confirmationID = randomID;
+    await user.save();
+    const link = `http://localhost:${config.server.port}/reset-password/${randomID}`;
+    // send email to user with link
+    const mailOptions = {
+      from: 'your-email@gmail.com',
+      to: user.email,
+      subject: 'Reset Password',
+      text: `Click on this link to reset your password: ${link}`
+    };
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.log(error);
+      } else {
+        console.log('Email sent: ' + info.response);
+      }
+    });
+    res.render('confirmation');
+}
+
+
+async function resetPassword(req, res) {
+    console.log("resetting password");
+    const { id, password, confirmPassword } = req.body;
+    if (password !== confirmPassword) {
+      res.status(400).send('Passwords do not match');
+      return;
+    }
+    const hashedPassword = await bcrypt.hash(password, 10)
+    const user = await User.findOne({ confirmationID: id });
+    if (!user) {
+      res.status(404).send('User not found');
+      return;
+    }
+    user.password = hashedPassword;
+    await user.save();
+    res.send('Password reset successfully');
+} 
 
 app.listen(8800)
 console.info("Listening on port 8800")
