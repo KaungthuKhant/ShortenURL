@@ -61,7 +61,10 @@ const userSchema = new mongoose.Schema({
     },
     confirmationID: {
         type: String,
-    }
+    },
+    resetPasswordExpires: {
+        type: Date,
+    },
 
 });
 

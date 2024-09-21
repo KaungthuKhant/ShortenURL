@@ -185,44 +185,19 @@ app.get('/forgot-password', (req, res) => {
 app.post('/forgot-password', forgotPassword);
 
 
-app.get('/reset-password/:id', (req, res) => {
-    const { id } = req.params;
-    res.render('reset-password', { id });
-});
-
-app.post('/reset-password', resetPassword);
-
-/*
 app.get('/reset-password/:id', async (req, res) => {
     const { id } = req.params;
     const user = await User.findOne({ confirmationID: id });
     if (!user) {
-        res.status(404).send('User not found');
-        return;
+        return res.status(404).send('User not found');
     }
-    res.render('reset-password', { user });
+    if (user.resetPasswordExpires < Date.now()) {
+        return res.status(400).send('Password reset link has expired');
+    }
+    res.render('reset-password', { id });
 });
 
-app.get('/reset-password', (req, res) => {
-    res.render('reset-password');
-});
-
-app.post('/reset-password', async (req, res) => {
-    const { id, password, confirmPassword } = req.body;
-    if (password !== confirmPassword) {
-      res.status(400).send('Passwords do not match');
-      return;
-    }
-    const user = await User.findOne({ confirmationID: id });
-    if (!user) {
-      res.status(404).send('User not found');
-      return;
-    }
-    user.password = password;
-    await user.save();
-    res.send('Password reset successfully');
-});
-*/
+app.post('/reset-password', resetPassword);
 
 app.get('/auth/google',
     passport.authenticate('google', { 
@@ -261,6 +236,12 @@ app.get('/:shortUrl', async (req, res) => {
 
 })
 
+app.post('/delete-url', async (req, res) => {
+    const shortUrl = req.body.shortUrl;
+    await User.deleteOne({ shortUrl });
+    res.redirect('/'); // refresh the table
+});
+
 
 app.delete('/logout', function(req, res, next) {
     req.logOut(function(err){
@@ -268,14 +249,7 @@ app.delete('/logout', function(req, res, next) {
         res.redirect('/login')
     })
 })
- 
-/*
-app.get('/logout', (req, res) =>{
-    console.log("Loggin out");
-    req.logout();
-    res.redirect('/')
-})
-*/
+
 function checkAuthenticated(req, res, next){
     if (req.isAuthenticated()){
         return next()
@@ -347,11 +321,12 @@ async function forgotPassword(req, res) {
     }
     const randomID = crypto.randomBytes(32).toString('hex');
     user.confirmationID = randomID;
+    user.resetPasswordExpires = Date.now() + 600000;     // the reset password link will be valid for 10 minute
     await user.save();
     const link = `http://localhost:${config.server.port}/reset-password/${randomID}`;
     // send email to user with link
     const mailOptions = {
-      from: 'your-email@gmail.com',
+      from: 'maungkaungthukhant@gmail.com',
       to: user.email,
       subject: 'Reset Password',
       text: `Click on this link to reset your password: ${link}`
