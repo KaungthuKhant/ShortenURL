@@ -13,6 +13,7 @@ const shortId = require('shortid')
 const nodemailer = require('nodemailer');
 const config = require('./config');
 const crypto = require('crypto');
+const QRCode = require('qrcode');
 
 // mongodb requires
 const mongoose = require("mongoose")
@@ -329,7 +330,7 @@ async function forgotPassword(req, res) {
       from: 'maungkaungthukhant@gmail.com',
       to: user.email,
       subject: 'Reset Password',
-      text: `Click on this link to reset your password: ${link}`
+      text: `Click on this link to reset your password: ${link}\nThe password reset link expires in 10 minutes.`
     };
     transporter.sendMail(mailOptions, (error, info) => {
       if (error) {
@@ -345,6 +346,14 @@ async function forgotPassword(req, res) {
 async function resetPassword(req, res) {
     console.log("resetting password");
     const { id, password, confirmPassword } = req.body;
+
+    // check if password is valid
+    if (!checkPassword(password)){
+        console.log("password is not valid");
+        res.render('reset-password', {id: id, message: "Password is not valid. Password must contain at least one uppercase letter, one lowercase letter, one number and 8 or more characters." })
+        return;
+    }
+
     if (password !== confirmPassword) {
       res.status(400).send('Passwords do not match');
       return;

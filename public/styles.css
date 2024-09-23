@@ -7,6 +7,12 @@ body {
     line-height: 1.6;
 }
 
+#shortUrl {
+    width: 150px;
+    flex-grow: 0; /* Prevents the input from growing */
+}
+
+
 .container {
     max-width: 1200px;
     margin: 0 auto;
@@ -44,7 +50,7 @@ input[type="text"] {
 }
 
 button {
-    background-color: #28a745;
+    background-color: #8ecae6;
     color: white;
     border: none;
     cursor: pointer;
@@ -52,7 +58,11 @@ button {
 }
 
 button:hover {
-    background-color: #218838;
+    background-color: #219ebc;
+}
+
+button:active {
+    background-color: #8ecae6;
 }
 
 table {
@@ -90,15 +100,11 @@ a:hover {
 }
 
 .logout-button {
-    background-color: #dc3545;
+    background-color: #c1121f;
 }
 
 .logout-button:hover {
-    background-color: #c82333;
-}
-
-.logout-button:active {
-    background-color: #bd2130;
+    background-color: #780000;
 }
 
 /* Existing styles for login and registration */
@@ -116,11 +122,15 @@ a:hover {
 }
 
 .delete-button {
-    background-color: #ed5334;
+    background-color: #ffb703;
 }
 
 .delete-button:hover {
-    background-color: #a33822;
+    background-color: #d69900;
+}
+
+.delete-button:active {
+    background-color: #ffb703;
 }
 
 /* Responsive design */
