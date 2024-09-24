@@ -26,6 +26,7 @@
                     <th>Full URL</th>
                     <th>Short URL</th>
                     <th>Clicks</th>
+                    <th>Details</th> <!-- New column -->
                     <th>Delete</th>
                     <th>Copy</th>
                 </tr>
@@ -36,6 +37,11 @@
                         <td style="vertical-align: middle;"><a href="<%= shortUrl.fullUrl %>"><%= shortUrl.fullUrl %></a></td>
                         <td style="vertical-align: middle;"><a href="<%= shortUrl.shortUrl %>"><%= shortUrl.shortUrl %></a></td>
                         <td style="vertical-align: middle;"><%= shortUrl.clicks %></td>
+                        <td style="vertical-align: middle;">
+                            <a href="/qr-code?fullUrl=<%= encodeURIComponent(shortUrl.fullUrl) %>&shortUrl=<%= encodeURIComponent(shortUrl.shortUrl) %>&clicks=<%= shortUrl.clicks %>">
+                                <i class="fas fa-external-link-alt"></i> <!-- Redirect Icon -->
+                            </a>
+                        </td>                        
                         <td style="vertical-align: middle;">
                             <form action="/delete-url" method="post">
                                 <input type="hidden" name="shortUrl" value="<%= shortUrl.shortUrl %>">
@@ -73,6 +79,11 @@
                 });
             });
         });
+
+
+
+
+        
     </script>
     
 </body>

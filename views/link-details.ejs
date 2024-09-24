@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Code</title>
+    <link rel="stylesheet" href="/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <h1>URL Details</h1>
+        
+        <div>
+            <p>
+                Full URL: <a href="<%= fullUrl %>" target="_blank"><%= fullUrl %></a>
+            </p>
+            <p>
+                Short URL: <a href="<%= shortUrl %>" target="_blank"><%= shortUrl %></a>
+                <button class="copy-short-url-button" data-clipboard-text="<%= shortUrl %>">
+                    <i class="fas fa-copy"></i> Copy
+                </button>
+            </p>
+            <p>Clicks: <%= clicks %></p>
+        </div>
+        
+        
+        
+        <img id="qrImage" src="<%= qrCode %>" alt="QR Code" style="border: 5px solid #8ecae6; padding: 10px;">
+
+
+        <div>
+            <button id="copyQrCodeButton">Copy QR Code</button> 
+        </div>
+        
+
+        <script>
+            // JavaScript to handle the "Copy QR Code" functionality
+            document.getElementById('copyQrCodeButton').addEventListener('click', function() {
+                const qrImage = document.getElementById('qrImage');
+
+                // Create a canvas element to draw the QR code image onto
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+
+                // Set canvas dimensions to match the image
+                canvas.width = qrImage.naturalWidth;
+                canvas.height = qrImage.naturalHeight;
+
+                // Draw the image on the canvas
+                context.drawImage(qrImage, 0, 0);
+
+                // Convert the canvas to a Blob (image data)
+                canvas.toBlob(function(blob) {
+                    // Use the Clipboard API to copy the blob (image data) to the clipboard
+                    const item = new ClipboardItem({ 'image/png': blob });
+                    navigator.clipboard.write([item]).then(() => {
+                        alert('QR code copied to clipboard!');
+                    }).catch(err => {
+                        console.error('Error copying QR code:', err);
+                    });
+                });
+            });
+
+
+
+            // Handle "Copy Short URL" functionality
+            const copyShortUrlButton = document.querySelector('.copy-short-url-button');
+            copyShortUrlButton.addEventListener('click', function() {
+                const shortUrl = copyShortUrlButton.getAttribute('data-clipboard-text');
+                navigator.clipboard.writeText(shortUrl).then(() => {
+                    alert('Short URL copied to clipboard!');
+                }).catch(err => {
+                    console.error('Error copying short URL:', err);
+                });
+            });
+        </script>
+    </div>
+</body>
+</html>

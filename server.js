@@ -94,10 +94,23 @@ app.use(methodOverride('_method'))
 app.use(express.static('public'));
 
 
+
+
 app.get('/', checkAuthenticated, async (req, res) =>{
     let links = await findLinksByEmail(req.user.email)
     res.render('index.ejs', {name: req.user.name, urls: links})
 })
+
+app.get('/qr-code', async (req, res) => {
+    const fullUrl = req.query.fullUrl;
+    const shortUrl = process.env.SERVER + req.query.shortUrl;
+    const clicks = req.query.clicks;
+
+    const qrCode = await QRCode.toDataURL(fullUrl); // Generate base64 QR code
+
+    // Render the EJS page and pass the variables to the template
+    res.render('link-details', { fullUrl, shortUrl, clicks, qrCode });
+});
 
 app.get('/login', checkNotAuthenticated, (req, res) =>{
     res.render('login.ejs')
@@ -251,6 +264,9 @@ app.delete('/logout', function(req, res, next) {
     })
 })
 
+
+
+
 function checkAuthenticated(req, res, next){
     if (req.isAuthenticated()){
         return next()
@@ -369,8 +385,8 @@ async function resetPassword(req, res) {
     res.send('Password reset successfully');
 } 
 
-app.listen(8800)
-console.info("Listening on port 8800")
+app.listen(process.env.PORT)
+console.info("Listening on port "+ process.env.PORT)
 
 
 
