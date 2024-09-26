@@ -94,12 +94,31 @@ app.use(methodOverride('_method'))
 app.use(express.static('public'));
 
 
+// Middleware to disable DNS prefetching for all routes
+// Without this, when a user paste a link in the brower like chrome
+// it will be prefetched and server.js (/:shortUrl) will be called increasing 
+// the number of clicks even though the user has not press enter yet, when they press enter, 
+// it callas again so it counts as twice
+app.use((req, res, next) => {
+    res.setHeader('Cache-Control', 'no-store');
+    next();
+});
 
 
 app.get('/', checkAuthenticated, async (req, res) =>{
     let links = await findLinksByEmail(req.user.email)
     res.render('index.ejs', {name: req.user.name, urls: links})
 })
+
+app.get('/fetch-urls', checkAuthenticated, async (req, res) => {
+    try {
+        let links = await findLinksByEmail(req.user.email); // Fetch updated URLs
+        res.json({ urls: links }); // Send the updated URLs as a JSON response
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch URLs' });
+    }
+});
+
 
 app.get('/qr-code', async (req, res) => {
     const fullUrl = req.query.fullUrl;
@@ -240,11 +259,22 @@ app.post('/shortUrls', async (req, res) =>{
 })
 
 app.get('/:shortUrl', async (req, res) => {
+
+    const skipPrefetch = req.query.prefetch;
+
+    // Check if the route is being accessed by prefetching
+    if (skipPrefetch === 'true') {
+        return res.sendStatus(204); // Send a "No Content" response to prefetch requests
+    }
+    
+
     let result = await findFullUrl(req.params.shortUrl)
     if (result == null) return res.sendStatus(404)
 
     result.clicks++
     result.save()
+
+    console.log("================================================ Updated the clicks to: " + result.clicks)
 
     res.redirect(result.fullUrl)
 

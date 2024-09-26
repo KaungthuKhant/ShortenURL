@@ -26,12 +26,12 @@
                     <th>Full URL</th>
                     <th>Short URL</th>
                     <th>Clicks</th>
-                    <th>Details</th> <!-- New column -->
+                    <th>Details</th>
                     <th>Delete</th>
                     <th>Copy</th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody id="urlTableBody">
                 <% urls.forEach(shortUrl => { %>
                     <tr style="height: 20px;">
                         <td style="vertical-align: middle;"><a href="<%= shortUrl.fullUrl %>"><%= shortUrl.fullUrl %></a></td>
@@ -39,9 +39,9 @@
                         <td style="vertical-align: middle;"><%= shortUrl.clicks %></td>
                         <td style="vertical-align: middle;">
                             <a href="/qr-code?fullUrl=<%= encodeURIComponent(shortUrl.fullUrl) %>&shortUrl=<%= encodeURIComponent(shortUrl.shortUrl) %>&clicks=<%= shortUrl.clicks %>">
-                                <i class="fas fa-external-link-alt"></i> <!-- Redirect Icon -->
+                                <i class="fas fa-external-link-alt"></i>
                             </a>
-                        </td>                        
+                        </td>
                         <td style="vertical-align: middle;">
                             <form action="/delete-url" method="post">
                                 <input type="hidden" name="shortUrl" value="<%= shortUrl.shortUrl %>">
@@ -65,25 +65,65 @@
         </form> 
     </div>
 
-
     <script>
-        const copyButtons = document.querySelectorAll('.copy-button');
-    
-        copyButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                const shortUrl = button.getAttribute('data-clipboard-text');
-                navigator.clipboard.writeText(shortUrl).then(() => {
-                    console.log('Short URL copied to clipboard!');
-                }).catch(err => {
-                    console.error('Error copying short URL to clipboard:', err);
+        // Function to update the table with new data
+        function updateTable(urls) {
+            const tableBody = document.querySelector('tbody');
+            tableBody.innerHTML = ''; // Clear existing table rows
+            
+            urls.forEach(url => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><a href="${url.fullUrl}">${url.fullUrl}</a></td>
+                    <td><a href="${url.shortUrl}">${url.shortUrl}</a></td>
+                    <td>${url.clicks}</td>
+                    <td><a href="/qr-code?fullUrl=${encodeURIComponent(url.fullUrl)}&shortUrl=${encodeURIComponent(url.shortUrl)}&clicks=${url.clicks}"><i class="fas fa-external-link-alt"></i></a></td>
+                    <td>
+                        <form action="/delete-url" method="post">
+                            <input type="hidden" name="shortUrl" value="${url.shortUrl}">
+                            <button type="submit" class="delete-button"><i class="fas fa-trash-alt"></i></button>
+                        </form>
+                    </td>
+                    <td>
+                        <button class="copy-button" data-clipboard-text="http://localhost:8800/${url.shortUrl}"><i class="fas fa-copy"></i></button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+
+        // Function to apply "copy to clipboard" functionality
+        function applyCopyFunctionality() {
+            const copyButtons = document.querySelectorAll('.copy-button');
+
+            copyButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const shortUrl = button.getAttribute('data-clipboard-text');
+                    navigator.clipboard.writeText(shortUrl).then(() => {
+                        console.log('Short URL copied to clipboard!');
+                    }).catch(err => {
+                        console.error('Error copying short URL to clipboard:', err);
+                    });
                 });
             });
+        }
+
+        // Detect when the page is restored from the cache (via the back button)
+        window.addEventListener('pageshow', function(event) {
+            if (event.persisted) { // Browser back button triggers the 'persisted' event
+                fetch('/fetch-urls') // Use the new data endpoint
+                    .then(response => response.json())
+                    .then(data => {
+                        updateTable(data.urls); // Update the table with new data
+                    })
+                    .catch(err => console.error('Error fetching updated data:', err));
+            }
         });
 
 
-
-
-        
+        // Initial application of the copy functionality when page loads
+        applyCopyFunctionality();
     </script>
     
 </body>
