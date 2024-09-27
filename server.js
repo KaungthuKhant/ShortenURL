@@ -260,11 +260,25 @@ app.post('/shortUrls', async (req, res) =>{
 
 app.get('/:shortUrl', async (req, res) => {
 
-    const skipPrefetch = req.query.prefetch;
+    // print out the req object
+    console.log("REQ OBJECT ===============================================================");
+    console.log(req);
+    console.log("REQ OBJECT ===============================================================");
 
-    // Check if the route is being accessed by prefetching
-    if (skipPrefetch === 'true') {
-        return res.sendStatus(204); // Send a "No Content" response to prefetch requests
+    /* the following line is to prevent the browser from prefetching the url
+     * When the user paste a link in the browser, the browser will prefetch the url
+     * this cause this route to be called and increase the click by one
+     * when the user actually click enter and go to the shortUrl, this route gets call agian
+     * increasing the click one more time so when the user go to the shortUrl by pasting
+     * the amount of click is increase by 2, to prevent that, we need to stop browser from prefatching the url
+     * 
+     * it is a hack, but it works       
+     */         
+    const purpose = req.get('Purpose') || req.get('X-Purpose');
+  
+    if (purpose === 'prefetch' || purpose === 'preview') {
+        // Ignore the prefetch request and return early.
+        return res.status(204).end(); // 204 No Content response
     }
     
 
