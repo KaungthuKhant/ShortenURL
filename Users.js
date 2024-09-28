@@ -65,6 +65,9 @@ const userSchema = new mongoose.Schema({
     resetPasswordExpires: {
         type: Date,
     },
+    urlExpirationDate: { 
+        type: Date 
+    },
 
 });
 

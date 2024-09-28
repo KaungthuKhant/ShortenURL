@@ -36,15 +36,26 @@ async function saveUser(namePara, emailPara, passPara, googleIdPara) {
     return { user, randomID }; // return the user and the random ID
 }
 
-async function saveLink(fullLink, shortLink, clicksParam, emailParam){
+async function saveLink(fullLink, shortLink, clicksParam, emailParam, expirationDate){
     console.log("searching for smilar results using short url of: " + shortLink)
     let searchResults = await findFullUrl(shortLink)
-    console.log("results found " + searchResults)
     if (searchResults != null){
         console.log("short url already used")
         return;
     }
-    const link = new User({schemaType: "Links", fullUrl: fullLink, shortUrl: shortLink, email: emailParam, clicks: clicksParam})
+
+    // Set the expiration date to 7 days from now if not provided
+    const expiryDate = expirationDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+    const link = new User({
+        schemaType: "Links", 
+        fullUrl: fullLink, 
+        shortUrl: shortLink, 
+        email: emailParam, 
+        clicks: clicksParam,
+        urlExpirationDate: expiryDate
+    })
+
     await link.save()
     console.log(link)
 }
@@ -124,11 +135,12 @@ app.get('/qr-code', async (req, res) => {
     const fullUrl = req.query.fullUrl;
     const shortUrl = process.env.SERVER + req.query.shortUrl;
     const clicks = req.query.clicks;
+    const expirationDate = req.query.expirationDate;
 
     const qrCode = await QRCode.toDataURL(fullUrl); // Generate base64 QR code
 
     // Render the EJS page and pass the variables to the template
-    res.render('link-details', { fullUrl, shortUrl, clicks, qrCode });
+    res.render('link-details', { fullUrl, shortUrl, clicks, qrCode, expirationDate });
 });
 
 app.get('/login', checkNotAuthenticated, (req, res) =>{
@@ -254,16 +266,14 @@ app.post('/shortUrls', async (req, res) =>{
         short = await shortId.generate()
         console.log("short url is " + short)
     }
-    await saveLink(req.body.fullUrl, short, 0, req.user.email)
+
+    const expirationDate = req.body.expirationDate ? new Date(req.body.expirationDate) : null;
+
+    await saveLink(req.body.fullUrl, short, 0, req.user.email, expirationDate)
     res.redirect('/')
 })
 
 app.get('/:shortUrl', async (req, res) => {
-
-    // print out the req object
-    console.log("REQ OBJECT ===============================================================");
-    console.log(req);
-    console.log("REQ OBJECT ===============================================================");
 
     /* the following line is to prevent the browser from prefetching the url
      * When the user paste a link in the browser, the browser will prefetch the url
@@ -432,5 +442,24 @@ async function resetPassword(req, res) {
 app.listen(process.env.PORT)
 console.info("Listening on port "+ process.env.PORT)
 
+// Check for expired URLs every hour and remove them
+setInterval(async () => {
+    const now = new Date();
+    try {
+        // Find and delete expired URLs
+
+        // Find the links that are less than the now date
+        const expiredLinks = await User.find({ schemaType: "Links", expirationDate: { $lt: now } });      
+        if (expiredLinks.length > 0) {
+            console.log("Expired links found. Deleting...");
+
+            // Delete expired links
+            await User.deleteMany({ schemaType: "Links", expirationDate: { $lt: now } });
+            console.log("Expired links deleted.");
+        }
+    } catch (error) {
+        console.error("Error checking for expired URLs:", error);
+    }
+}, 60 * 60 * 1000); // Run every hour
 
 

@@ -15,13 +15,24 @@
             <p>
                 Full URL: <a href="<%= fullUrl %>" target="_blank"><%= fullUrl %></a>
             </p>
+
             <p>
                 Short URL: <a href="<%= shortUrl %>" target="_blank"><%= shortUrl %></a>
                 <button class="copy-short-url-button" data-clipboard-text="<%= shortUrl %>">
                     <i class="fas fa-copy"></i> Copy
                 </button>
             </p>
+
             <p>Clicks: <%= clicks %></p>
+
+            <p>Expiration Date: 
+                <% if (expirationDate) { %>
+                    <%= new Date(expirationDate).toLocaleString() %>
+                <% } else { %>
+                    No expiration date set.
+                <% } %>
+            </p>
+            
         </div>
         
         
