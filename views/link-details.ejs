@@ -4,88 +4,121 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>QR Code</title>
-    <link rel="stylesheet" href="/styles.css">
+    <!-- Tailwind CSS for modern styles -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <!-- Load React and ReactDOM -->
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6.26.0/babel.min.js"></script>
+
+    <style>
+        body {
+            background-image: url('images/background1.jpeg'); /* background image */
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        }
+
+        /* Style for the transparent container */
+        #urlDetailsContainer {
+            background-color: rgba(255, 255, 255, 0.4); /* White with 80% opacity */
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Optional: Adds a shadow effect */
+            max-width: 1000px;
+            margin: 50px auto;
+        }
+    </style>
 </head>
-<body>
-    <div class="container">
-        <h1>URL Details</h1>
-        
-        <div>
-            <p>
-                Full URL: <a href="<%= fullUrl %>" target="_blank"><%= fullUrl %></a>
-            </p>
+<body class="bg-gray-100 bg-opacity-75 min-h-screen flex items-center justify-center">
+    <div id="urlDetailsContainer" class="container mx-auto p-6 bg-white bg-opacity-90 rounded-lg shadow-md">
+        <!-- React will render here -->
+    </div>
 
-            <p>
-                Short URL: <a href="<%= shortUrl %>" target="_blank"><%= shortUrl %></a>
-                <button class="copy-short-url-button" data-clipboard-text="<%= shortUrl %>">
-                    <i class="fas fa-copy"></i> Copy
-                </button>
-            </p>
+    <script type="text/babel">
+        const UrlDetails = ({ fullUrl, shortUrl, clicks, qrCode, expirationDate }) => {
+            const [copySuccess, setCopySuccess] = React.useState('');
+            const [copyQrSuccess, setCopyQrSuccess] = React.useState('');
 
-            <p>Clicks: <%= clicks %></p>
+            const handleCopyUrl = () => {
+                navigator.clipboard.writeText(shortUrl).then(() => {
+                    setCopySuccess('Short URL copied to clipboard!');
+                    setTimeout(() => setCopySuccess(''), 2000);
+                }).catch(err => {
+                    console.error('Error copying short URL:', err);
+                });
+            };
 
-            <p>Expiration Date: 
-                <% if (expirationDate) { %>
-                    <%= new Date(expirationDate).toLocaleString() %>
-                <% } else { %>
-                    No expiration date set.
-                <% } %>
-            </p>
-            
-        </div>
-        
-        
-        
-        <img id="qrImage" src="<%= qrCode %>" alt="QR Code" style="border: 5px solid #8ecae6; padding: 10px;">
-
-
-        <div>
-            <button id="copyQrCodeButton">Copy QR Code</button> 
-        </div>
-        
-
-        <script>
-            // JavaScript to handle the "Copy QR Code" functionality
-            document.getElementById('copyQrCodeButton').addEventListener('click', function() {
+            const handleCopyQrCode = () => {
                 const qrImage = document.getElementById('qrImage');
-
-                // Create a canvas element to draw the QR code image onto
                 const canvas = document.createElement('canvas');
                 const context = canvas.getContext('2d');
-
-                // Set canvas dimensions to match the image
                 canvas.width = qrImage.naturalWidth;
                 canvas.height = qrImage.naturalHeight;
-
-                // Draw the image on the canvas
                 context.drawImage(qrImage, 0, 0);
-
-                // Convert the canvas to a Blob (image data)
-                canvas.toBlob(function(blob) {
-                    // Use the Clipboard API to copy the blob (image data) to the clipboard
+                canvas.toBlob(function (blob) {
                     const item = new ClipboardItem({ 'image/png': blob });
                     navigator.clipboard.write([item]).then(() => {
-                        alert('QR code copied to clipboard!');
+                        setCopyQrSuccess('QR code copied to clipboard!');
+                        setTimeout(() => setCopyQrSuccess(''), 2000);
                     }).catch(err => {
                         console.error('Error copying QR code:', err);
                     });
                 });
-            });
+            };
 
+            return (
+                <div className="space-y-6">
+                    <h1 className="text-2xl font-bold mb-4 text-center">URL Details</h1>
+                    <div className="space-y-4 text-center">
+                        <div>
+                            <p>Full URL: <a href={fullUrl} target="_blank" className="text-blue-600 hover:underline">{fullUrl}</a></p>
+                        </div>
+                        <div>
+                            <p>Short URL: <a href={shortUrl} target="_blank" className="text-blue-600 hover:underline">{shortUrl}</a></p>
+                            <button onClick={handleCopyUrl} className="bg-blue-500 text-white px-4 py-2 mt-2 rounded-md hover:bg-blue-700 transition duration-200">
+                                <i className="fas fa-copy"></i> Copy
+                            </button>
+                            {copySuccess && <p className="text-green-500 mt-2">{copySuccess}</p>}
+                        </div>
+                        <div>
+                            <p>Clicks: {clicks}</p>
+                        </div>
+                        <div>
+                            <p>Expiration Date: {expirationDate ? new Date(expirationDate).toLocaleString() : 'No expiration date set.'}</p>
+                        </div>
+                        <div className="mt-6 flex justify-center">
+                            <img id="qrImage" src={qrCode} alt="QR Code" className="border-4 border-blue-500 p-4 rounded-md" />
+                        </div>
+                        <div className="mt-4 flex justify-center">
+                            <button onClick={handleCopyQrCode} className="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-700 transition duration-200">
+                                Copy QR Code
+                            </button>
+                            {copyQrSuccess && <p className="text-green-500 mt-2">{copyQrSuccess}</p>}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
 
+        // Injecting React component into the page
+        const fullUrl = "<%= fullUrl %>";
+        const shortUrl = "<%= shortUrl %>";
+        const clicks = "<%= clicks %>";
+        const qrCode = "<%= qrCode %>";
+        const expirationDate = "<%= expirationDate %>";
 
-            // Handle "Copy Short URL" functionality
-            const copyShortUrlButton = document.querySelector('.copy-short-url-button');
-            copyShortUrlButton.addEventListener('click', function() {
-                const shortUrl = copyShortUrlButton.getAttribute('data-clipboard-text');
-                navigator.clipboard.writeText(shortUrl).then(() => {
-                    alert('Short URL copied to clipboard!');
-                }).catch(err => {
-                    console.error('Error copying short URL:', err);
-                });
-            });
-        </script>
-    </div>
+        ReactDOM.render(
+            <UrlDetails 
+                fullUrl={fullUrl} 
+                shortUrl={shortUrl} 
+                clicks={clicks} 
+                qrCode={qrCode} 
+                expirationDate={expirationDate} 
+            />, 
+            document.getElementById('urlDetailsContainer')
+        );
+    </script>
 </body>
 </html>

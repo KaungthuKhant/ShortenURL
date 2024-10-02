@@ -131,17 +131,36 @@ app.get('/fetch-urls', checkAuthenticated, async (req, res) => {
 });
 
 
-app.get('/qr-code', async (req, res) => {
-    const fullUrl = req.query.fullUrl;
-    const shortUrl = process.env.SERVER + req.query.shortUrl;
-    const clicks = req.query.clicks;
-    const expirationDate = req.query.expirationDate;
 
-    const qrCode = await QRCode.toDataURL(fullUrl); // Generate base64 QR code
+app.post('/qr-code', async (req, res) => {
+    try {
+        let shortUrl = req.body.shortUrl;
 
-    // Render the EJS page and pass the variables to the template
-    res.render('link-details', { fullUrl, shortUrl, clicks, qrCode, expirationDate });
+        console.log("short url: " + shortUrl);
+
+        // Find the URL information using the shortUrl
+        const user = await User.findOne({ shortUrl: shortUrl });
+
+        if (!user) {
+            return res.status(404).send('URL not found');
+        }
+
+        // asign the values from the user to the variables
+        shortUrl = process.env.SERVER+shortUrl;
+        const fullUrl = user.fullUrl;
+        const clicks = user.clicks;
+        const expirationDate = user.urlExpirationDate;
+        const qrCode = await QRCode.toDataURL(fullUrl);
+
+        // Render the EJS page and pass the variables to the template
+        res.render('link-details', {fullUrl, shortUrl, clicks, qrCode, expirationDate});
+    } catch (error) {
+        console.error(error);
+        res.status(500).send('Server error');
+    }
+    
 });
+
 
 app.get('/login', checkNotAuthenticated, (req, res) =>{
     res.render('login.ejs')
@@ -447,19 +466,20 @@ setInterval(async () => {
     const now = new Date();
     try {
         // Find and delete expired URLs
-
+        console.log("Checking for expired URLs...");
         // Find the links that are less than the now date
-        const expiredLinks = await User.find({ schemaType: "Links", expirationDate: { $lt: now } });      
+        const expiredLinks = await User.find({ schemaType: "Links", urlExpirationDate: { $lt: now } });      
         if (expiredLinks.length > 0) {
             console.log("Expired links found. Deleting...");
+            console.log("Total number of expired links to be deleted " + expiredLinks.length);
 
             // Delete expired links
-            await User.deleteMany({ schemaType: "Links", expirationDate: { $lt: now } });
+            await User.deleteMany({ schemaType: "Links", urlExpirationDate: { $lt: now } });
             console.log("Expired links deleted.");
         }
     } catch (error) {
         console.error("Error checking for expired URLs:", error);
     }
-}, 60 * 60 * 1000); // Run every hour
+},  60* 60 * 1000); // Run every minute
 
 

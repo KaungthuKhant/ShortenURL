@@ -16,7 +16,9 @@
             <div class="form-row">
                 <input required placeholder="Enter URL to shorten" type="url" name="fullUrl" id="fullUrl">
                 <input type="text" placeholder="Custom Short URL" name="shortUrl" id="shortUrl">
-                <input type="date" placeholder="Expiration Date (optional)" name="expirationDate">
+                <!--For expiration date, prevent the users from entering the value from keyboard using onkeydown event-->
+                <!--This will make sure user can only click to select the date and the expiration date for the links will be limited-->
+                <input type="date" placeholder="Expiration Date (optional)" name="expirationDate" id="expirationDate" onkeydown="return false"> 
                 <button type="submit">Shorten</button>
             </div>
         </form>
@@ -39,9 +41,12 @@
                         <td style="vertical-align: middle;"><a href="<%= shortUrl.shortUrl %>"><%= shortUrl.shortUrl %></a></td>
                         <td style="vertical-align: middle;"><%= shortUrl.clicks %></td>
                         <td style="vertical-align: middle;">
-                            <a href="/qr-code?fullUrl=<%= encodeURIComponent(shortUrl.fullUrl) %>&shortUrl=<%= encodeURIComponent(shortUrl.shortUrl) %>&clicks=<%= shortUrl.clicks %>">
-                                <i class="fas fa-external-link-alt"></i>
-                            </a>
+                            <form action="/qr-code" method="post">
+                                <input type="hidden" name="shortUrl" value="<%= shortUrl.shortUrl %>">
+                                <button type="submit">
+                                    <i class="fas fa-external-link-alt"></i>
+                                </button>
+                            </form>
                         </td>
                         <td style="vertical-align: middle;">
                             <form action="/delete-url" method="post">
@@ -59,6 +64,27 @@
                     </tr>
                 <% }) %>
             </tbody>
+
+
+            <script>
+                // Set max expiration date to 2 weeks from today
+                const expirationDateInput = document.getElementById('expirationDate');
+        
+                const today = new Date();
+                const maxDate = new Date();
+                maxDate.setDate(today.getDate() + 14); // Set max date to 14 days in the future
+        
+                // Format date to YYYY-MM-DD
+                const formatDate = (date) => {
+                    const year = date.getFullYear();
+                    const month = String(date.getMonth() + 1).padStart(2, '0'); // Add leading zero
+                    const day = String(date.getDate()).padStart(2, '0'); // Add leading zero
+                    return `${year}-${month}-${day}`;
+                };
+        
+                expirationDateInput.setAttribute('min', formatDate(today));
+                expirationDateInput.setAttribute('max', formatDate(maxDate));
+            </script>
         </table>
         
         <form action="/logout?_method=DELETE" method="POST" class="logout-form">
