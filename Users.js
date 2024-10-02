@@ -70,7 +70,7 @@ const userSchema = new mongoose.Schema({
     },
     clickCountToSendEmail: {
         type: Number,
-        default: 1 // default value, can be changed by the user
+        default: 1000 // default value, can be changed by the user
     }
 
 });

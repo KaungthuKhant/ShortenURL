@@ -36,8 +36,9 @@ async function saveUser(namePara, emailPara, passPara, googleIdPara) {
     return { user, randomID }; // return the user and the random ID
 }
 
-async function saveLink(fullLink, shortLink, clicksParam, emailParam, expirationDate){
+async function saveLink(fullLink, shortLink, clicksParam, emailParam, expirationDate, clickCountsToNotify){
     console.log("searching for smilar results using short url of: " + shortLink)
+    console.log("Click count to notify is: " + clickCountsToNotify)
     let searchResults = await findFullUrl(shortLink)
     if (searchResults != null){
         console.log("short url already used")
@@ -53,7 +54,8 @@ async function saveLink(fullLink, shortLink, clicksParam, emailParam, expiration
         shortUrl: shortLink, 
         email: emailParam, 
         clicks: clicksParam,
-        urlExpirationDate: expiryDate
+        urlExpirationDate: expiryDate,
+        clickCountToSendEmail: Number(clickCountsToNotify),
     })
 
     await link.save()
@@ -281,6 +283,7 @@ app.get('/auth/google/callback',
 
 app.post('/shortUrls', async (req, res) =>{
     let short = req.body.shortUrl
+    let clickCountsToNotify = req.body.clickCountsToNotify
     if (short == ""){
         short = await shortId.generate()
         console.log("short url is " + short)
@@ -288,7 +291,7 @@ app.post('/shortUrls', async (req, res) =>{
 
     const expirationDate = req.body.expirationDate ? new Date(req.body.expirationDate) : null;
 
-    await saveLink(req.body.fullUrl, short, 0, req.user.email, expirationDate)
+    await saveLink(req.body.fullUrl, short, 0, req.user.email, expirationDate, clickCountsToNotify)
     res.redirect('/')
 })
 
@@ -388,7 +391,6 @@ function sendConfirmationEmail(recipientEmail, randomID) {
 }
 
 function sendClickCountReachedEmail(url) {
-    console.log("sending confirmation email to: " + url.email);
 
     const mailOptions = {
         from: config.email.user,

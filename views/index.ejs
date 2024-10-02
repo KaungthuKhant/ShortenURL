@@ -10,12 +10,12 @@
 <body>
     <div class="container">
         <h1>Welcome, <%= name %></h1>
-        <h1>URL Shrinker</h1>
         
         <form action="/shortUrls" method="POST">
             <div class="form-row">
                 <input required placeholder="Enter URL to shorten" type="url" name="fullUrl" id="fullUrl">
                 <input type="text" placeholder="Custom Short URL" name="shortUrl" id="shortUrl">
+                <input type="number" placeholder="Notify at Clicks" name="clickCountsToNotify" id="clickCountsToNotify">
                 <!--For expiration date, prevent the users from entering the value from keyboard using onkeydown event-->
                 <!--This will make sure user can only click to select the date and the expiration date for the links will be limited-->
                 <input type="date" placeholder="Expiration Date (optional)" name="expirationDate" id="expirationDate" onkeydown="return false"> 
