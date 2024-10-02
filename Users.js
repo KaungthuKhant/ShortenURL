@@ -68,6 +68,10 @@ const userSchema = new mongoose.Schema({
     urlExpirationDate: { 
         type: Date 
     },
+    clickCountToSendEmail: {
+        type: Number,
+        default: 1 // default value, can be changed by the user
+    }
 
 });
 

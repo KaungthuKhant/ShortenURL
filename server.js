@@ -315,9 +315,12 @@ app.get('/:shortUrl', async (req, res) => {
     if (result == null) return res.sendStatus(404)
 
     result.clicks++
-    result.save()
+    result.save();
 
-    console.log("================================================ Updated the clicks to: " + result.clicks)
+    const clickCountToSendEmail = result.clickCountToSendEmail;
+    if (result.clicks % clickCountToSendEmail === 0) {
+      sendClickCountReachedEmail(result);
+    }
 
     res.redirect(result.fullUrl)
 
@@ -374,6 +377,28 @@ function sendConfirmationEmail(recipientEmail, randomID) {
         to: recipientEmail,
         subject: 'Confirm your email address',
         text: `Click on the following link to confirm your email address: ${confirmationUrl}`,
+    };
+
+    transporter.sendMail(mailOptions, (error) => {
+        if (error) {
+        console.error(error);
+        }
+        console.log('Email sent: ' + info.response);
+    });
+}
+
+function sendClickCountReachedEmail(url) {
+    console.log("sending confirmation email to: " + url.email);
+
+    const mailOptions = {
+        from: config.email.user,
+        to: url.email,
+        subject: 'Link Click Notification',
+        text: `A new click count has been reached for this link: ${url.fullUrl}\n
+        Full URL: ${url.fullUrl}\n
+        Short URL: ${url.shortUrl}\n
+        Clicks: ${url.clicks}\n
+        Expiration Date: ${url.urlExpirationDate}`,
     };
 
     transporter.sendMail(mailOptions, (error) => {
