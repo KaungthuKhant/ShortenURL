@@ -41,7 +41,7 @@
                         <td style="vertical-align: middle;"><a href="<%= shortUrl.shortUrl %>"><%= shortUrl.shortUrl %></a></td>
                         <td style="vertical-align: middle;"><%= shortUrl.clicks %></td>
                         <td style="vertical-align: middle;">
-                            <form action="/qr-code" method="post">
+                            <form action="/qr-code" method="post" target="_blank">
                                 <input type="hidden" name="shortUrl" value="<%= shortUrl.shortUrl %>">
                                 <button type="submit">
                                     <i class="fas fa-external-link-alt"></i>

@@ -6,51 +6,138 @@
     <title>QR Code</title>
     <!-- Tailwind CSS for modern styles -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="link-details-css.css"> <!-- Link to the external CSS file -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
-    <!-- Load React and ReactDOM -->
-    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
-    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
-    <script src="https://unpkg.com/babel-standalone@6.26.0/babel.min.js"></script>
-
-    <style>
-        body {
-            background-image: url('images/background1.jpeg'); /* background image */
-            background-size: cover;
-            background-position: center;
-            background-attachment: fixed;
-        }
-
-        /* Style for the transparent container */
-        #urlDetailsContainer {
-            background-color: rgba(255, 255, 255, 0.4); /* White with 80% opacity */
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Optional: Adds a shadow effect */
-            max-width: 1000px;
-            margin: 50px auto;
-        }
-    </style>
 </head>
 <body class="bg-gray-100 bg-opacity-75 min-h-screen flex items-center justify-center">
     <div id="urlDetailsContainer" class="container mx-auto p-6 bg-white bg-opacity-90 rounded-lg shadow-md">
-        <!-- React will render here -->
+        <h1 class="text-2xl font-bold mb-4 text-center">URL Details</h1>
+        <div class="space-y-4 text-center">
+            <div>
+                <p>Full URL: 
+                    <a id="fullUrlLink" href="<%= fullUrl %>" target="_blank" class="text-blue-600 hover:underline"><%= fullUrl %></a>
+                    <input id="fullUrlInput" type="text" value="<%= fullUrl %>" class="hidden border border-gray-300 rounded p-1">
+                    <button id="editFullUrlBtn" class="ml-2 text-blue-500">
+                        <i class="fas fa-pencil-alt"></i>
+                    </button>
+                    <button id="saveFullUrlBtn" class="ml-2 text-green-500 hidden">
+                        <i class="fas fa-save"></i>
+                    </button>
+                </p>
+            </div>
+            <div>
+                <p>Short URL: 
+                    <a id="shortUrlLink" href="<%= shortUrl %>" target="_blank" class="text-blue-600 hover:underline"><%= shortUrl %></a>
+                    <input id="shortUrlInput" type="text" value="<%= shortUrl %>" class="hidden border border-gray-300 rounded p-1">
+                    <button id="editShortUrlBtn" class="ml-2 text-blue-500">
+                        <i class="fas fa-pencil-alt"></i>
+                    </button>
+                    <button id="saveShortUrlBtn" class="ml-2 text-green-500 hidden">
+                        <i class="fas fa-save"></i>
+                    </button>
+                    <button id="copyUrlBtn" class="bg-blue-500 text-white px-4 py-2 mt-2 rounded-md hover:bg-blue-700 transition duration-200">
+                        <i class="fas fa-copy"></i> Copy
+                    </button>
+                    <p id="copySuccessMessage" class="text-green-500 mt-2"></p>
+                </p>
+            </div>
+            <div>
+                <p>Clicks: <%= clicks %></p>
+            </div>
+            <div>
+                <p>Expiration Date: <%= expirationDate ? new Date(expirationDate).toLocaleString() : 'No expiration date set.' %></p>
+            </div>
+            <div class="mt-6 flex justify-center">
+                <img id="qrImage" src="<%= qrCode %>" alt="QR Code" class="border-4 border-blue-500 p-4 rounded-md">
+            </div>
+            <div class="mt-4 flex justify-center">
+                <button id="copyQrCodeBtn" class="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-700 transition duration-200">
+                    Copy QR Code
+                </button>
+                <p id="copyQrSuccessMessage" class="text-green-500 mt-2"></p>
+            </div>
+        </div>
     </div>
 
-    <script type="text/babel">
-        const UrlDetails = ({ fullUrl, shortUrl, clicks, qrCode, expirationDate }) => {
-            const [copySuccess, setCopySuccess] = React.useState('');
-            const [copyQrSuccess, setCopyQrSuccess] = React.useState('');
+    <!-- Move scripts to the end of the body -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
 
-            const handleCopyUrl = () => {
+            // Handle Copy URL functionality
+            document.getElementById('copyUrlBtn').addEventListener('click', function () {
+                const shortUrl = "<%= shortUrl %>";
                 navigator.clipboard.writeText(shortUrl).then(() => {
-                    setCopySuccess('Short URL copied to clipboard!');
-                    setTimeout(() => setCopySuccess(''), 2000);
+                    document.getElementById('copySuccessMessage').textContent = 'Short URL copied to clipboard!';
+                    setTimeout(() => {
+                        document.getElementById('copySuccessMessage').textContent = '';
+                    }, 2000);
                 }).catch(err => {
                     console.error('Error copying short URL:', err);
                 });
-            };
+            });
 
-            const handleCopyQrCode = () => {
+            // Handle Edit Full URL functionality
+            document.getElementById('editFullUrlBtn').addEventListener('click', function () {
+                document.getElementById('fullUrlLink').classList.add('hidden');
+                document.getElementById('fullUrlInput').classList.remove('hidden');
+                document.getElementById('editFullUrlBtn').classList.add('hidden');
+                document.getElementById('saveFullUrlBtn').classList.remove('hidden');
+            });
+
+            // Handle Save Full URL functionality
+            document.getElementById('saveFullUrlBtn').addEventListener('click', function () {
+                const updatedFullUrl = document.getElementById('fullUrlInput').value;
+                fetch('/updateFullURL', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ fullUrl: updatedFullUrl })
+                }).then(response => response.json())
+                  .then(data => {
+                    if (data.success) {
+                        document.getElementById('fullUrlLink').textContent = updatedFullUrl;
+                        document.getElementById('fullUrlLink').href = updatedFullUrl;
+                        document.getElementById('fullUrlLink').classList.remove('hidden');
+                        document.getElementById('fullUrlInput').classList.add('hidden');
+                        document.getElementById('editFullUrlBtn').classList.remove('hidden');
+                        document.getElementById('saveFullUrlBtn').classList.add('hidden');
+                    }
+                  }).catch(err => console.error('Error updating Full URL:', err));
+            });
+
+            // Handle Edit Short URL functionality
+            document.getElementById('editShortUrlBtn').addEventListener('click', function () {
+                document.getElementById('shortUrlLink').classList.add('hidden');
+                document.getElementById('shortUrlInput').classList.remove('hidden');
+                document.getElementById('editShortUrlBtn').classList.add('hidden');
+                document.getElementById('saveShortUrlBtn').classList.remove('hidden');
+            });
+
+            // Handle Save Short URL functionality
+            document.getElementById('saveShortUrlBtn').addEventListener('click', function () {
+                const updatedShortUrl = document.getElementById('shortUrlInput').value;
+                fetch('/updateShortURL', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ shortUrl: updatedShortUrl })
+                }).then(response => response.json())
+                  .then(data => {
+                    if (data.success) {
+                        document.getElementById('shortUrlLink').textContent = updatedShortUrl;
+                        document.getElementById('shortUrlLink').href = updatedShortUrl;
+                        document.getElementById('shortUrlLink').classList.remove('hidden');
+                        document.getElementById('shortUrlInput').classList.add('hidden');
+                        document.getElementById('editShortUrlBtn').classList.remove('hidden');
+                        document.getElementById('saveShortUrlBtn').classList.add('hidden');
+                    }
+                  }).catch(err => console.error('Error updating Short URL:', err));
+            });
+
+            // Handle Copy QR Code functionality
+            document.getElementById('copyQrCodeBtn').addEventListener('click', function () {
                 const qrImage = document.getElementById('qrImage');
                 const canvas = document.createElement('canvas');
                 const context = canvas.getContext('2d');
@@ -60,65 +147,16 @@
                 canvas.toBlob(function (blob) {
                     const item = new ClipboardItem({ 'image/png': blob });
                     navigator.clipboard.write([item]).then(() => {
-                        setCopyQrSuccess('QR code copied to clipboard!');
-                        setTimeout(() => setCopyQrSuccess(''), 2000);
+                        document.getElementById('copyQrSuccessMessage').textContent = 'QR code copied to clipboard!';
+                        setTimeout(() => {
+                            document.getElementById('copyQrSuccessMessage').textContent = '';
+                        }, 2000);
                     }).catch(err => {
                         console.error('Error copying QR code:', err);
                     });
                 });
-            };
-
-            return (
-                <div className="space-y-6">
-                    <h1 className="text-2xl font-bold mb-4 text-center">URL Details</h1>
-                    <div className="space-y-4 text-center">
-                        <div>
-                            <p>Full URL: <a href={fullUrl} target="_blank" className="text-blue-600 hover:underline">{fullUrl}</a></p>
-                        </div>
-                        <div>
-                            <p>Short URL: <a href={shortUrl} target="_blank" className="text-blue-600 hover:underline">{shortUrl}</a></p>
-                            <button onClick={handleCopyUrl} className="bg-blue-500 text-white px-4 py-2 mt-2 rounded-md hover:bg-blue-700 transition duration-200">
-                                <i className="fas fa-copy"></i> Copy
-                            </button>
-                            {copySuccess && <p className="text-green-500 mt-2">{copySuccess}</p>}
-                        </div>
-                        <div>
-                            <p>Clicks: {clicks}</p>
-                        </div>
-                        <div>
-                            <p>Expiration Date: {expirationDate ? new Date(expirationDate).toLocaleString() : 'No expiration date set.'}</p>
-                        </div>
-                        <div className="mt-6 flex justify-center">
-                            <img id="qrImage" src={qrCode} alt="QR Code" className="border-4 border-blue-500 p-4 rounded-md" />
-                        </div>
-                        <div className="mt-4 flex justify-center">
-                            <button onClick={handleCopyQrCode} className="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-700 transition duration-200">
-                                Copy QR Code
-                            </button>
-                            {copyQrSuccess && <p className="text-green-500 mt-2">{copyQrSuccess}</p>}
-                        </div>
-                    </div>
-                </div>
-            );
-        };
-
-        // Injecting React component into the page
-        const fullUrl = "<%= fullUrl %>";
-        const shortUrl = "<%= shortUrl %>";
-        const clicks = "<%= clicks %>";
-        const qrCode = "<%= qrCode %>";
-        const expirationDate = "<%= expirationDate %>";
-
-        ReactDOM.render(
-            <UrlDetails 
-                fullUrl={fullUrl} 
-                shortUrl={shortUrl} 
-                clicks={clicks} 
-                qrCode={qrCode} 
-                expirationDate={expirationDate} 
-            />, 
-            document.getElementById('urlDetailsContainer')
-        );
+            });
+        });
     </script>
 </body>
 </html>

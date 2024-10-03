@@ -1,0 +1,44 @@
+/* link-details-css.css */
+body {
+    background-image: url('images/background1.jpeg'); /* background image */
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+}
+
+/* Style for the transparent container */
+#urlDetailsContainer {
+    background-color: rgba(255, 255, 255, 0.4);
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    max-width: 1000px;
+    margin: 50px auto;
+}
+
+/* Styling for buttons and text */
+button {
+    transition: background-color 0.3s ease;
+    border: none;
+    cursor: pointer;
+}
+
+button:focus {
+    outline: none;
+}
+
+/* General text styling */
+p {
+    margin: 0;
+}
+
+/* Styling for hover effects */
+button:hover {
+    filter: brightness(90%);
+}
+
+img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
