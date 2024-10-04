@@ -364,6 +364,12 @@ app.post('/updateShortUrl', async (req, res) => {
         const user = await User.findOne({ schemaType: "Links", shortUrl: original });
         console.log(user);
 
+        const otherUrl = await User.findOne({ schemaType: "Links", shortUrl: short });
+        if (otherUrl) {
+            console.log('Short URL already exists');
+            return res.json({ success: false, message: 'Short URL already exists' });
+        }
+
         user.shortUrl = short;
         await user.save();
         
