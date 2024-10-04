@@ -105,6 +105,7 @@ app.use(passport.initialize())
 app.use(passport.session())
 app.use(methodOverride('_method'))
 app.use(express.static('public'));
+app.use(express.json());
 
 
 // Middleware to disable DNS prefetching for all routes
@@ -334,6 +335,46 @@ app.post('/delete-url', async (req, res) => {
     await User.deleteOne({ shortUrl });
     res.redirect('/'); // refresh the table
 });
+
+// MIGHT HAVE TO UPDATE/FIX THIS ONE
+app.post('/updateFullURL', async (req, res) => {
+    const { fullUrl, shortUrl } = req.body;
+    let short = shortUrl.replace(process.env.SERVER , "");
+    try {
+        const user = await User.findOne({ schemaType: "Links", shortUrl: short });
+        console.log(user);
+
+        user.fullUrl = fullUrl;
+        await user.save();
+        
+        console.log('URL updated successfully');
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error updating URL:', error);
+        res.json({ success: false, message: 'Failed to update URL' });
+    }
+});
+
+
+app.post('/updateShortUrl', async (req, res) => {
+    const { shortUrl, originalShortUrl } = req.body;
+    let short = shortUrl.replace(process.env.SERVER , "");
+    let original = originalShortUrl.replace(process.env.SERVER , "");
+    try {
+        const user = await User.findOne({ schemaType: "Links", shortUrl: original });
+        console.log(user);
+
+        user.shortUrl = short;
+        await user.save();
+        
+        console.log('URL updated successfully');
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error updating URL:', error);
+        res.json({ success: false, message: 'Failed to update URL' });
+    }
+});
+
 
 
 app.delete('/logout', function(req, res, next) {

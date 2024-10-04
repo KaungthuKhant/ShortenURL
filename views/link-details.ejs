@@ -20,7 +20,7 @@
                     <button id="editFullUrlBtn" class="ml-2 text-blue-500">
                         <i class="fas fa-pencil-alt"></i>
                     </button>
-                    <button id="saveFullUrlBtn" class="ml-2 text-green-500 hidden">
+                    <button id="saveFullURLBtn" class="ml-2 text-green-500 hidden">
                         <i class="fas fa-save"></i>
                     </button>
                 </p>
@@ -28,19 +28,23 @@
             <div>
                 <p>Short URL: 
                     <a id="shortUrlLink" href="<%= shortUrl %>" target="_blank" class="text-blue-600 hover:underline"><%= shortUrl %></a>
-                    <input id="shortUrlInput" type="text" value="<%= shortUrl %>" class="hidden border border-gray-300 rounded p-1">
+                    <input id="shortUrlInput" type="text" value="<%= shortUrl.split('/').pop() %>" class="hidden border border-gray-300 rounded p-1">
+                    <input type="hidden" id="originalShortUrl" value="<%= shortUrl %>"> <!-- Store original short URL -->
                     <button id="editShortUrlBtn" class="ml-2 text-blue-500">
                         <i class="fas fa-pencil-alt"></i>
                     </button>
                     <button id="saveShortUrlBtn" class="ml-2 text-green-500 hidden">
                         <i class="fas fa-save"></i>
                     </button>
-                    <button id="copyUrlBtn" class="bg-blue-500 text-white px-4 py-2 mt-2 rounded-md hover:bg-blue-700 transition duration-200">
-                        <i class="fas fa-copy"></i> Copy
-                    </button>
+                    <div>
+                        <button id="copyUrlBtn" class="bg-blue-500 text-white px-4 py-2 mt-2 rounded-md hover:bg-blue-700 transition duration-200">
+                            <i class="fas fa-copy"></i> Copy Short Url
+                        </button>
+                    </div>
+                    
                     <p id="copySuccessMessage" class="text-green-500 mt-2"></p>
                 </p>
-            </div>
+            </div>            
             <div>
                 <p>Clicks: <%= clicks %></p>
             </div>
@@ -81,29 +85,7 @@
                 document.getElementById('fullUrlLink').classList.add('hidden');
                 document.getElementById('fullUrlInput').classList.remove('hidden');
                 document.getElementById('editFullUrlBtn').classList.add('hidden');
-                document.getElementById('saveFullUrlBtn').classList.remove('hidden');
-            });
-
-            // Handle Save Full URL functionality
-            document.getElementById('saveFullUrlBtn').addEventListener('click', function () {
-                const updatedFullUrl = document.getElementById('fullUrlInput').value;
-                fetch('/updateFullURL', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ fullUrl: updatedFullUrl })
-                }).then(response => response.json())
-                  .then(data => {
-                    if (data.success) {
-                        document.getElementById('fullUrlLink').textContent = updatedFullUrl;
-                        document.getElementById('fullUrlLink').href = updatedFullUrl;
-                        document.getElementById('fullUrlLink').classList.remove('hidden');
-                        document.getElementById('fullUrlInput').classList.add('hidden');
-                        document.getElementById('editFullUrlBtn').classList.remove('hidden');
-                        document.getElementById('saveFullUrlBtn').classList.add('hidden');
-                    }
-                  }).catch(err => console.error('Error updating Full URL:', err));
+                document.getElementById('saveFullURLBtn').classList.remove('hidden');
             });
 
             // Handle Edit Short URL functionality
@@ -114,17 +96,54 @@
                 document.getElementById('saveShortUrlBtn').classList.remove('hidden');
             });
 
-            // Handle Save Short URL functionality
-            document.getElementById('saveShortUrlBtn').addEventListener('click', function () {
-                const updatedShortUrl = document.getElementById('shortUrlInput').value;
-                fetch('/updateShortURL', {
+            // Handle Save Full URLs functionality
+            document.getElementById('saveFullURLBtn').addEventListener('click', function () {
+                const updatedFullUrl = document.getElementById('fullUrlInput').value;
+
+                // Retrieve the base URL from the original short URL and the updated last part
+                const originalShortUrl = document.getElementById('originalShortUrl').value;
+                const baseUrl = originalShortUrl.substring(0, originalShortUrl.lastIndexOf('/') + 1); // Extract base URL before last "/"
+                const updatedShortUrl = baseUrl + document.getElementById('shortUrlInput').value;
+
+                fetch('/updateFullURL', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ shortUrl: updatedShortUrl })
+                    body: JSON.stringify({ fullUrl: updatedFullUrl, shortUrl: updatedShortUrl})
                 }).then(response => response.json())
-                  .then(data => {
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById('fullUrlLink').textContent = updatedFullUrl;
+                        document.getElementById('fullUrlLink').href = updatedFullUrl;
+                        document.getElementById('shortUrlLink').textContent = updatedShortUrl;
+                        document.getElementById('shortUrlLink').href = updatedShortUrl;
+                        document.getElementById('fullUrlLink').classList.remove('hidden');
+                        document.getElementById('fullUrlInput').classList.add('hidden');
+                        document.getElementById('shortUrlLink').classList.remove('hidden');
+                        document.getElementById('shortUrlInput').classList.add('hidden');
+                        document.getElementById('editFullUrlBtn').classList.remove('hidden');
+                        document.getElementById('editShortUrlBtn').classList.remove('hidden');
+                        document.getElementById('saveFullURLBtn').classList.add('hidden');
+                    }
+                }).catch(err => console.error('Error updating URLs:', err));
+            });
+
+
+            // Handle Save Short URL functionality
+            document.getElementById('saveShortUrlBtn').addEventListener('click', function () {
+                const originalShortUrl = document.getElementById('originalShortUrl').value;
+                const baseUrl = originalShortUrl.substring(0, originalShortUrl.lastIndexOf('/') + 1); // Extract base URL before last "/"
+                const updatedShortUrl = baseUrl + document.getElementById('shortUrlInput').value;
+
+                fetch('/updateShortUrl', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ shortUrl: updatedShortUrl, originalShortUrl: originalShortUrl })
+                }).then(response => response.json())
+                .then(data => {
                     if (data.success) {
                         document.getElementById('shortUrlLink').textContent = updatedShortUrl;
                         document.getElementById('shortUrlLink').href = updatedShortUrl;
@@ -133,8 +152,9 @@
                         document.getElementById('editShortUrlBtn').classList.remove('hidden');
                         document.getElementById('saveShortUrlBtn').classList.add('hidden');
                     }
-                  }).catch(err => console.error('Error updating Short URL:', err));
+                }).catch(err => console.error('Error updating short URL:', err));
             });
+
 
             // Handle Copy QR Code functionality
             document.getElementById('copyQrCodeBtn').addEventListener('click', function () {
