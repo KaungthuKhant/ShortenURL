@@ -21,7 +21,10 @@
                         <i class="fas fa-pencil-alt"></i>
                     </button>
                     <button id="saveFullURLBtn" class="ml-2 text-green-500 hidden">
-                        <i class="fas fa-save"></i>
+                        <i class="fas fa-save"></i> Save
+                    </button>
+                    <button id="cancelFullUrlBtn" class="ml-2 text-red-500 hidden">
+                        <i class="fas fa-times"></i> Cancel
                     </button>
                 </p>
             </div>
@@ -34,7 +37,10 @@
                         <i class="fas fa-pencil-alt"></i>
                     </button>
                     <button id="saveShortUrlBtn" class="ml-2 text-green-500 hidden">
-                        <i class="fas fa-save"></i>
+                        <i class="fas fa-save"></i> Save
+                    </button>
+                    <button id="cancelShortUrlBtn" class="ml-2 text-red-500 hidden">
+                        <i class="fas fa-times"></i> Cancel
                     </button>
                     <div>
                         <button id="copyUrlBtn" class="bg-blue-500 text-white px-4 py-2 mt-2 rounded-md hover:bg-blue-700 transition duration-200">
@@ -42,7 +48,7 @@
                         </button>
                     </div>
                     
-                    <p id="copySuccessMessage" class="text-green-500 mt-2"></p>
+                    <p id="copySuccessMessage" class="text-black-500 mt-2"></p>
                 </p>
             </div>            
             <div>
@@ -54,12 +60,12 @@
             <div class="mt-6 flex justify-center">
                 <img id="qrImage" src="<%= qrCode %>" alt="QR Code" class="border-4 border-blue-500 p-4 rounded-md">
             </div>
-            <div class="mt-4 flex justify-center">
+            <div class="mt-4 flex flex-col justify-center items-center">
                 <button id="copyQrCodeBtn" class="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-700 transition duration-200">
                     Copy QR Code
                 </button>
-                <p id="copyQrSuccessMessage" class="text-green-500 mt-2"></p>
-            </div>
+                <p id="copyQrSuccessMessage" class="text-black-500 mt-2"></p>
+            </div>            
         </div>
     </div>
 
@@ -86,6 +92,17 @@
                 document.getElementById('fullUrlInput').classList.remove('hidden');
                 document.getElementById('editFullUrlBtn').classList.add('hidden');
                 document.getElementById('saveFullURLBtn').classList.remove('hidden');
+                document.getElementById('cancelFullUrlBtn').classList.remove('hidden');
+            });
+
+            // Handle Cancel Full URL functionality
+            document.getElementById('cancelFullUrlBtn').addEventListener('click', function () {
+                document.getElementById('fullUrlInput').value = "<%= fullUrl %>";
+                document.getElementById('fullUrlLink').classList.remove('hidden');
+                document.getElementById('fullUrlInput').classList.add('hidden');
+                document.getElementById('editFullUrlBtn').classList.remove('hidden');
+                document.getElementById('saveFullURLBtn').classList.add('hidden');
+                document.getElementById('cancelFullUrlBtn').classList.add('hidden');
             });
 
             // Handle Edit Short URL functionality
@@ -94,6 +111,17 @@
                 document.getElementById('shortUrlInput').classList.remove('hidden');
                 document.getElementById('editShortUrlBtn').classList.add('hidden');
                 document.getElementById('saveShortUrlBtn').classList.remove('hidden');
+                document.getElementById('cancelShortUrlBtn').classList.remove('hidden');
+            });
+
+            // Handle Cancel Short URL functionality
+            document.getElementById('cancelShortUrlBtn').addEventListener('click', function () {
+                document.getElementById('shortUrlInput').value = "<%= shortUrl.split('/').pop() %>";
+                document.getElementById('shortUrlLink').classList.remove('hidden');
+                document.getElementById('shortUrlInput').classList.add('hidden');
+                document.getElementById('editShortUrlBtn').classList.remove('hidden');
+                document.getElementById('saveShortUrlBtn').classList.add('hidden');
+                document.getElementById('cancelShortUrlBtn').classList.add('hidden');
             });
 
             // Handle Save Full URLs functionality
