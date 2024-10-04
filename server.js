@@ -342,7 +342,6 @@ app.post('/updateFullURL', async (req, res) => {
     let short = shortUrl.replace(process.env.SERVER , "");
     try {
         const user = await User.findOne({ schemaType: "Links", shortUrl: short });
-        console.log(user);
 
         user.fullUrl = fullUrl;
         await user.save();
@@ -362,7 +361,6 @@ app.post('/updateShortUrl', async (req, res) => {
     let original = originalShortUrl.replace(process.env.SERVER , "");
     try {
         const user = await User.findOne({ schemaType: "Links", shortUrl: original });
-        console.log(user);
 
         const otherUrl = await User.findOne({ schemaType: "Links", shortUrl: short });
         if (otherUrl) {

@@ -102,22 +102,18 @@
 
                 // Retrieve the base URL from the original short URL and the updated last part
                 const originalShortUrl = document.getElementById('originalShortUrl').value;
-                const baseUrl = originalShortUrl.substring(0, originalShortUrl.lastIndexOf('/') + 1); // Extract base URL before last "/"
-                const updatedShortUrl = baseUrl + document.getElementById('shortUrlInput').value;
 
                 fetch('/updateFullURL', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ fullUrl: updatedFullUrl, shortUrl: updatedShortUrl})
+                    body: JSON.stringify({ fullUrl: updatedFullUrl, shortUrl: originalShortUrl})
                 }).then(response => response.json())
                 .then(data => {
                     if (data.success) {
                         document.getElementById('fullUrlLink').textContent = updatedFullUrl;
                         document.getElementById('fullUrlLink').href = updatedFullUrl;
-                        document.getElementById('shortUrlLink').textContent = updatedShortUrl;
-                        document.getElementById('shortUrlLink').href = updatedShortUrl;
                         document.getElementById('fullUrlLink').classList.remove('hidden');
                         document.getElementById('fullUrlInput').classList.add('hidden');
                         document.getElementById('shortUrlLink').classList.remove('hidden');
@@ -151,6 +147,7 @@
                         document.getElementById('shortUrlInput').classList.add('hidden');
                         document.getElementById('editShortUrlBtn').classList.remove('hidden');
                         document.getElementById('saveShortUrlBtn').classList.add('hidden');
+                        document.getElementById('originalShortUrl').value = updatedShortUrl;
                     }
                 }).catch(err => console.error('Error updating short URL:', err));
             });
