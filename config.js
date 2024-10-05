@@ -7,7 +7,7 @@ module.exports = {
       pass: 'nlzbtvvqlbavenyy',
     },
     server: {
-      port: 8800,
+      url: process.env.SERVER_URL || 'http://localhost:8800'
     },
     secret: 'YOUR_SECRET_KEY',
   };

@@ -1,10 +1,12 @@
 /* link-details-css.css */
 body {
-    background-image: url('images/background1.jpeg'); /* background image */
+    background-image: url('images/background1.jpeg');
     background-size: cover;
     background-position: center;
     background-attachment: fixed;
+    transition: background-image 0.5s ease-in-out;
 }
+
 
 /* Style for the transparent container */
 #urlDetailsContainer {
@@ -14,31 +16,60 @@ body {
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     max-width: 1000px;
     margin: 50px auto;
+    transition: all 0.3s ease-in-out;
 }
+
+
 
 /* Styling for buttons and text */
 button {
-    transition: background-color 0.3s ease;
+    transition: all 0.3s ease;
     border: none;
     cursor: pointer;
+    padding: 10px 15px;
+    border-radius: 5px;
+    background-color: #219ebc;
+    color: white;
+}
+
+button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+button:active {
+    transform: translateY(0);
+    box-shadow: none;
 }
 
 button:focus {
     outline: none;
+    box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.5);
 }
 
 /* General text styling */
 p {
     margin: 0;
+    transition: color 0.3s ease;
+}
+
+p:hover {
+    color: #333;
 }
 
 /* Styling for hover effects */
 button:hover {
-    filter: brightness(90%);
+    filter: brightness(110%);
 }
 
 img {
     max-width: 100%;
     height: auto;
     display: block;
+    transition: all 0.3s ease-in-out;
+}
+
+img:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
