@@ -28,11 +28,11 @@
             <thead>
                 <tr>
                     <th>Full URL</th>
-                    <th>Short URL</th>
-                    <th>Clicks</th>
-                    <th>Details</th>
-                    <th>Delete</th>
-                    <th>Copy</th>
+                    <th style="width: 150px;">Short URL</th>
+                    <th style="width: 60px;">Clicks</th>
+                    <th style="width: 60px;">Details</th>
+                    <th style="width: 60px;">Delete</th>
+                    <th style="width: 60px;">Copy</th>
                 </tr>
             </thead>
             <tbody id="urlTableBody">
@@ -144,6 +144,18 @@
                     .then(response => response.json())
                     .then(data => {
                         updateTable(data.urls); // Update the table with new data
+                    })
+                    .catch(err => console.error('Error fetching updated data:', err));
+            }
+        });
+
+        // Detect when the user comes back to this tab from another tab
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden) {
+                fetch('/fetch-urls')
+                    .then(response => response.json())
+                    .then(data => {
+                        updateTable(data.urls);
                     })
                     .catch(err => console.error('Error fetching updated data:', err));
             }
