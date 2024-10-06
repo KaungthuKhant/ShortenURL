@@ -41,7 +41,7 @@
                         <td style="vertical-align: middle;"><a href="<%= shortUrl.shortUrl %>"><%= shortUrl.shortUrl %></a></td>
                         <td style="vertical-align: middle;"><%= shortUrl.clicks %></td>
                         <td style="vertical-align: middle;">
-                            <form action="/qr-code" method="post" target="_blank">
+                            <form action="/url-details" method="post" target="_blank">
                                 <input type="hidden" name="shortUrl" value="<%= shortUrl.shortUrl %>">
                                 <button type="submit">
                                     <i class="fas fa-external-link-alt"></i>
@@ -104,7 +104,7 @@
                     <td><a href="${url.fullUrl}">${url.fullUrl}</a></td>
                     <td><a href="${url.shortUrl}">${url.shortUrl}</a></td>
                     <td>${url.clicks}</td>
-                    <td><a href="/qr-code?fullUrl=${encodeURIComponent(url.fullUrl)}&shortUrl=${encodeURIComponent(url.shortUrl)}&clicks=${url.clicks}"><i class="fas fa-external-link-alt"></i></a></td>
+                    <td><a href="/url-details?fullUrl=${encodeURIComponent(url.fullUrl)}&shortUrl=${encodeURIComponent(url.shortUrl)}&clicks=${url.clicks}"><i class="fas fa-external-link-alt"></i></a></td>
                     <td>
                         <form action="/delete-url" method="post">
                             <input type="hidden" name="shortUrl" value="${url.shortUrl}">

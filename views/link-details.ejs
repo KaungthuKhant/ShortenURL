@@ -195,6 +195,10 @@
                         document.getElementById('editShortUrlBtn').classList.remove('hidden');
                         document.getElementById('saveFullURLBtn').classList.add('hidden');
                         document.getElementById('cancelFullUrlBtn').classList.add('hidden');
+
+                        // Update QR code
+                        const qrImage = document.getElementById('qrImage');
+                        qrImage.src = data.qrCode;
                     }
                 }).catch(err => console.error('Error updating URLs:', err));
             });

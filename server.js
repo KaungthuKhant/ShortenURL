@@ -115,25 +115,25 @@ app.get('/fetch-urls', checkAuthenticated, async (req, res) => {
 });
 
 // Route: Generate QR code for a short URL
-app.post('/qr-code', async (req, res) => {
+app.post('/url-details', async (req, res) => {
     try {
         const { shortUrl } = req.body;
-        const user = await Url.findOne({ shortUrl });
+        const url = await Url.findOne({ shortUrl });
 
-        if (!user) {
+        if (!url) {
             console.log('URL not found:', shortUrl);
             return res.status(404).send('URL not found');
         }
 
         const fullShortUrl = `${process.env.SERVER}${shortUrl}`;
-        const qrCode = await QRCode.toDataURL(user.fullUrl);
+        const qrCode = await QRCode.toDataURL(url.fullUrl);
 
         res.render('link-details', {
-            fullUrl: user.fullUrl,
+            fullUrl: url.fullUrl,
             shortUrl: fullShortUrl,
-            clicks: user.clicks,
+            clicks: url.clicks,
             qrCode,
-            expirationDate: user.urlExpirationDate
+            expirationDate: url.urlExpirationDate
         });
     } catch (error) {
         console.error('Error generating QR code:', error);
@@ -323,19 +323,21 @@ app.post('/updateFullURL', async (req, res) => {
     const { fullUrl, shortUrl } = req.body;
     const short = shortUrl.replace(process.env.SERVER, "");
     try {
-        const user = await Url.findOneAndUpdate(
+        const url = await Url.findOneAndUpdate(
             { shortUrl: short },
             { fullUrl: fullUrl },
             { new: true }
         );
         
-        if (!user) {
+        if (!url) {
             console.log('URL not found when searching using shortUrl:', short);
             return res.json({ success: false, message: 'URL not found' });
         }
         
+        const qrCode = await QRCode.toDataURL(url.fullUrl);
+        
         console.log('Full URL updated successfully:', short);
-        res.json({ success: true });
+        res.json({ success: true, qrCode: qrCode });
     } catch (error) {
         console.error('Error updating full URL:', error);
         res.json({ success: false, message: 'Failed to update URL' });
@@ -480,3 +482,42 @@ setInterval(async () => {
         console.error("Error checking for expired URLs:", error);
     }
 }, 60 * 60 * 1000); // Run every hour
+
+// Function to send reminder emails for URLs about to expire
+async function sendExpirationReminders() {
+    const now = new Date();
+    const twentyFourHoursFromNow = new Date(now.getTime() + 48 * 60 * 60 * 1000);
+    try {
+        console.log("Checking for URLs about to expire...");
+        const aboutToExpireUrls = await Url.find({ 
+            urlExpirationDate: { $gt: now, $lt: twentyFourHoursFromNow } 
+        });
+        
+        for (const url of aboutToExpireUrls) {
+            const user = await User.findById(url.userId);
+            if (user && user.email) {
+                const mailOptions = {
+                    from: config.email.user,
+                    to: user.email,
+                    subject: 'URL About to Expire',
+                    text: `Your shortened URL (${url.fullUrl}) will expire in less than 48 hours.`
+                };
+                
+                transporter.sendMail(mailOptions, (error, info) => {
+                    if (error) {
+                        console.error('Error sending URL expiration reminder email:', error);
+                    } else {
+                        console.log('URL expiration reminder email sent:', info.response);
+                    }
+                });
+            }
+        }
+        
+        console.log(`${aboutToExpireUrls.length} users notified about URLs about to expire.`);
+    } catch (error) {
+        console.error("Error checking for URLs about to expire:", error);
+    }
+}
+
+// Run the reminder function every 12 hours
+setInterval(sendExpirationReminders, 12 * 60 * 60 * 1000);
