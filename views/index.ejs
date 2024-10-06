@@ -19,7 +19,9 @@
                 <!--For expiration date, prevent the users from entering the value from keyboard using onkeydown event-->
                 <!--This will make sure user can only click to select the date and the expiration date for the links will be limited-->
                 <input type="date" placeholder="Expiration Date (optional)" name="expirationDate" id="expirationDate" onkeydown="return false"> 
+                <input type="hidden" name="userEmail" id="userEmail" value="<%= email %>">
                 <button type="submit">Shorten</button>
+                
             </div>
         </form>
         

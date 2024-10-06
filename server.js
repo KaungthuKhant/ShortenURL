@@ -100,7 +100,7 @@ async function saveLink(fullLink, shortLink, userId, expirationDate, clickCounts
 // Route: Home page
 app.get('/', checkAuthenticated, async (req, res) => {
     const links = await Url.find({ userId: req.user._id });
-    res.render('index.ejs', { name: req.user.name, urls: links });
+    res.render('index.ejs', { name: req.user.name, email: req.user.email, urls: links });
 });
 
 
@@ -288,9 +288,15 @@ app.get('/auth/google/callback',
 // Route: Create short URL
 app.post('/shortUrls', async (req, res) => {
     let short = req.body.shortUrl || await shortId.generate();
+    let userEmail = req.body.userEmail;
+
+    // get the user id from the email
+    const user = await User.findOne({ email: userEmail });
+    const userId = user._id;
+
     const expirationDate = req.body.expirationDate ? new Date(req.body.expirationDate) : null;
 
-    const link = await saveLink(req.body.fullUrl, short, req.user._id, expirationDate, req.body.clickCountsToNotify);
+    const link = await saveLink(req.body.fullUrl, short, userId, expirationDate, req.body.clickCountsToNotify);
     if (!link) {
         return res.status(400).send('Short URL already in use');
     }
