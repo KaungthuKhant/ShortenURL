@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URL Shortener</title>
+    <link rel="stylesheet" href="/home.css">
+</head>
+<body>
+    <header>
+        <h1>URL Shortener</h1>
+        <nav>
+            <button id="loginBtn" onclick="window.location.href='/login'">Log In</button>
+            <button id="signupBtn" onclick="window.location.href='/register'">Sign Up</button>
+        </nav>
+    </header>
+
+    <main>
+        <section id="intro">
+            <h2>Welcome to URL Shortener</h2>
+            <p>My application allows you to create short, easy-to-share links. Features include:</p>
+            <ul>
+                <li>Quick URL shortening</li>
+                <li>Custom short URLs</li>
+                <li>Click tracking</li>
+                <li>QR code generation</li>
+            </ul>
+        </section>
+
+        <section id="urlChecker">
+            <h3>Check a Short URL</h3>
+            <div class="input-group">
+                <input type="text" id="shortUrlInput" placeholder="Enter Short URL to check redirection">
+                <button id="checkBtn">Check</button>
+            </div>
+            <p id="resultMessage" class="hidden"></p>
+        </section>
+    </main>
+
+    <script>
+        document.getElementById('checkBtn').addEventListener('click', async () => {
+            const shortUrl = document.getElementById('shortUrlInput').value;
+            const resultMessage = document.getElementById('resultMessage');
+
+            try {
+                const response = await fetch('/checkURL', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ shortUrl }),
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    resultMessage.textContent = `Full URL: ${data.fullUrl}`;
+                    resultMessage.classList.remove('error');
+                } else {
+                    resultMessage.textContent = data.message;
+                    resultMessage.classList.add('error');
+                }
+            } catch (error) {
+                resultMessage.textContent = 'An error occurred. Please try again.';
+                resultMessage.classList.add('error');
+            }
+
+            resultMessage.classList.remove('hidden');
+        });
+    </script>
+</body>
+</html>

@@ -103,6 +103,28 @@ app.get('/', checkAuthenticated, async (req, res) => {
     res.render('index.ejs', { name: req.user.name, urls: links });
 });
 
+
+// Route: Home landing page
+app.get('/home', (req, res) => {
+    res.render('home.ejs', { message: null });
+});
+
+app.post('/checkURL', async (req, res) => {
+    const { shortUrl } = req.body;
+    const shortUrlAbbr = shortUrl.replace(process.env.SERVER, "");
+    try {
+        const url = await Url.findOne({ shortUrl: shortUrlAbbr });
+        if (url) {
+            res.json({ success: true, fullUrl: url.fullUrl });
+        } else {
+            res.json({ success: false, message: 'Short URL not found' });
+        }
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
+
 // Route: Fetch URLs for authenticated user
 app.get('/fetch-urls', checkAuthenticated, async (req, res) => {
     try {
