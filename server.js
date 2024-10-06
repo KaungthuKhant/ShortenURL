@@ -452,8 +452,30 @@ setInterval(async () => {
     const now = new Date();
     try {
         console.log("Checking for expired URLs...");
+        const expiredUrls = await Url.find({ urlExpirationDate: { $lt: now } });
+        
+        for (const url of expiredUrls) {
+            const user = await User.findById(url.userId);
+            if (user && user.email) {
+                const mailOptions = {
+                    from: config.email.user,
+                    to: user.email,
+                    subject: 'URL Expired and Deleted',
+                    text: `Your shortened URL (${url.fullUrl}) has expired and been deleted.`
+                };
+                
+                transporter.sendMail(mailOptions, (error, info) => {
+                    if (error) {
+                        console.error('Error sending URL expiration email:', error);
+                    } else {
+                        console.log('URL expiration email sent:', info.response);
+                    }
+                });
+            }
+        }
+        
         const result = await Url.deleteMany({ urlExpirationDate: { $lt: now } });
-        console.log(`${result.deletedCount} expired links deleted.`);
+        console.log(`${result.deletedCount} expired links deleted and users notified.`);
     } catch (error) {
         console.error("Error checking for expired URLs:", error);
     }
