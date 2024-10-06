@@ -109,6 +109,7 @@ app.get('/home', (req, res) => {
     res.render('home.ejs', { message: null });
 });
 
+
 app.post('/checkURL', async (req, res) => {
     const { shortUrl } = req.body;
     const shortUrlAbbr = shortUrl.replace(process.env.SERVER, "");
@@ -406,7 +407,7 @@ app.delete('/logout', function(req, res, next) {
     req.logOut(function(err){
         if (err) { return next(err); }
         console.log('User logged out');
-        res.redirect('/login');
+        res.redirect('/home');
     });
 });
 

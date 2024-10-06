@@ -1,20 +1,23 @@
 body {
-    font-family: Arial, sans-serif;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     line-height: 1.6;
     margin: 0;
-    padding: 0;
-    background-color: #f4f4f4;
-    color: #333;
-    transition: background-color 0.3s ease;
+    padding: 20px;
+    background: linear-gradient(135deg, #2c3e50, #34495e);
+    color: #ecf0f1;
+    transition: background 0.5s ease;
+    min-height: 100vh;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 body:hover {
-    background-color: #e8e8e8;
+    background: linear-gradient(135deg, #34495e, #2c3e50);
 }
 
 header {
-    background-color: #333;
-    color: #fff;
+    background-color: #34495e;
+    color: #ecf0f1;
     padding: 1rem;
     display: flex;
     justify-content: space-between;
@@ -32,6 +35,8 @@ header:hover {
 h1 {
     margin: 0;
     transition: transform 0.3s ease;
+    font-size: 2.5em;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
 }
 
 h1:hover {
@@ -39,15 +44,16 @@ h1:hover {
 }
 
 nav button {
-    background-color: #fff;
-    color: #333;
+    background-color: #3498db;
+    color: #ecf0f1;
     border: none;
-    padding: 0.5rem 1rem;
+    padding: 0.7rem 1rem;
     margin-left: 1rem;
     cursor: pointer;
     transition: all 0.3s ease;
     position: relative;
     overflow: hidden;
+    border-radius: 5px;
 }
 
 nav button::after {
@@ -57,13 +63,15 @@ nav button::after {
     left: 0;
     width: 100%;
     height: 0;
-    background-color: #333;
+    background-color: #2980b9;
     transition: height 0.3s ease;
     z-index: -1;
 }
 
 nav button:hover {
-    color: #fff;
+    background-color: #2980b9;
+    transform: translateY(-2px);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
 }
 
 nav button:hover::after {
@@ -78,7 +86,7 @@ main {
 }
 
 #intro, #urlChecker {
-    background-color: #fff;
+    background-color: #2c3e50;
     padding: 2rem;
     margin-bottom: 2rem;
     border-radius: 5px;
@@ -86,14 +94,13 @@ main {
     transition: all 0.3s ease;
 }
 
-
 h2, h3 {
     margin-top: 0;
     transition: color 0.3s ease;
 }
 
 h2:hover, h3:hover {
-    color: #007bff;
+    color: #3498db;
 }
 
 ul {
@@ -112,7 +119,7 @@ ul li:before {
     content: '➤';
     position: absolute;
     left: 0;
-    color: #007bff;
+    color: #3498db;
     transition: transform 0.3s ease;
 }
 
@@ -136,26 +143,28 @@ ul li:hover:before {
 
 #shortUrlInput {
     flex-grow: 1;
-    padding: 0.5rem;
+    padding: 0.7rem;
     font-size: 1rem;
-    border: 1px solid #ddd;
-    border-radius: 3px 0 0 3px;
+    border: 1px solid #34495e;
+    border-radius: 5px 0 0 5px;
     transition: all 0.3s ease;
+    background-color: #34495e;
+    color: #ecf0f1;
 }
 
 #shortUrlInput:focus {
     outline: none;
-    border-color: #007bff;
-    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+    border-color: #3498db;
+    box-shadow: 0 0 5px rgba(52, 152, 219, 0.5);
 }
 
 #checkBtn {
-    padding: 0.5rem 1rem;
+    padding: 0.7rem 1rem;
     font-size: 1rem;
-    background-color: #333;
-    color: #fff;
+    background-color: #3498db;
+    color: #ecf0f1;
     border: none;
-    border-radius: 0 3px 3px 0;
+    border-radius: 0 5px 5px 0;
     cursor: pointer;
     transition: all 0.3s ease;
     position: relative;
@@ -176,7 +185,9 @@ ul li:hover:before {
 }
 
 #checkBtn:hover {
-    background-color: #555;
+    background-color: #2980b9;
+    transform: translateY(-2px);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
 }
 
 #checkBtn:active::after {
@@ -187,13 +198,13 @@ ul li:hover:before {
 
 #resultMessage {
     padding: 1rem;
-    background-color: #e8f5e9;
-    border-radius: 3px;
+    background-color: #34495e;
+    border-radius: 5px;
     transition: all 0.3s ease;
 }
 
 #resultMessage.error {
-    background-color: #ffebee;
+    background-color: #e74c3c;
 }
 
 #resultMessage:not(.hidden) {
