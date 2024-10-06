@@ -1,7 +1,9 @@
+// Load environment variables if not in production
 if (process.env.NODE_ENV !== 'production') {
     require('dotenv').config();
 }
 
+// Import required modules
 const express = require('express');
 const bcrypt = require('bcrypt');
 const passport = require('passport');
@@ -14,16 +16,21 @@ const crypto = require('crypto');
 const QRCode = require('qrcode');
 const mongoose = require("mongoose");
 
+// Import local modules and configurations
 const config = require('./config');
 const User = require("./models/User");
 const Url = require("./models/URL");
 const { checkPassword, sendConfirmationEmail, sendClickCountReachedEmail } = require('./utils');
 const { checkAuthenticated, checkNotAuthenticated } = require('./middleware');
 
+// Initialize Express app
 const app = express();
 
+// Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI || "mongodb://localhost/ShortURLPractice");
+console.log('Connected to MongoDB');
 
+// Initialize Passport configuration
 const initializePassport = require('./passport-config');
 initializePassport(
     passport,
@@ -32,6 +39,7 @@ initializePassport(
     saveUser
 );
 
+// Set up view engine and middleware
 app.set('view engine', 'ejs');
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
@@ -52,6 +60,7 @@ app.use((req, res, next) => {
     next();
 });
 
+// Function to save a new user
 async function saveUser(name, email, password, googleId) {
     const user = new User({
         name,
@@ -61,14 +70,15 @@ async function saveUser(name, email, password, googleId) {
         confirmationID: crypto.randomBytes(16).toString('hex')
     });
     await user.save();
-    console.log(user);
+    console.log('New user saved:', user.email);
     return user;
 }
 
+// Function to save a new short link
 async function saveLink(fullLink, shortLink, userId, expirationDate, clickCountsToNotify) {
     const existingLink = await Url.findOne({ shortUrl: shortLink });
     if (existingLink) {
-        console.log("Short URL already used");
+        console.log("Short URL already in use:", shortLink);
         return null;
     }
 
@@ -83,30 +93,35 @@ async function saveLink(fullLink, shortLink, userId, expirationDate, clickCounts
     });
 
     await link.save();
-    console.log(link);
+    console.log('New link saved:', link.shortUrl);
     return link;
 }
 
+// Route: Home page
 app.get('/', checkAuthenticated, async (req, res) => {
     const links = await Url.find({ userId: req.user._id });
     res.render('index.ejs', { name: req.user.name, urls: links });
 });
 
+// Route: Fetch URLs for authenticated user
 app.get('/fetch-urls', checkAuthenticated, async (req, res) => {
     try {
         const links = await Url.find({ userId: req.user._id });
         res.json({ urls: links });
     } catch (err) {
+        console.error('Error fetching URLs:', err);
         res.status(500).json({ error: 'Failed to fetch URLs' });
     }
 });
 
+// Route: Generate QR code for a short URL
 app.post('/qr-code', async (req, res) => {
     try {
         const { shortUrl } = req.body;
         const user = await Url.findOne({ shortUrl });
 
         if (!user) {
+            console.log('URL not found:', shortUrl);
             return res.status(404).send('URL not found');
         }
 
@@ -121,35 +136,37 @@ app.post('/qr-code', async (req, res) => {
             expirationDate: user.urlExpirationDate
         });
     } catch (error) {
-        console.error(error);
+        console.error('Error generating QR code:', error);
         res.status(500).send('Server error');
     }
 });
 
+// Route: Login page
 app.get('/login', checkNotAuthenticated, (req, res) => {
     res.render('login.ejs');
 });
 
+// Route: Handle login
 app.post('/login', checkNotAuthenticated, passport.authenticate('local', {
     successRedirect: '/',
     failureRedirect: '/login',
     failureFlash: true
 }));
 
+// Route: Registration page
 app.get('/register', checkNotAuthenticated, (req, res) => {
     res.render('register.ejs');
 });
 
+// Route: Handle registration
 app.post('/register', checkNotAuthenticated, async (req, res) => {
     try {
-        // Check if the password meets the requirements
         if (!checkPassword(req.body.password)) {
             return res.render('register', { 
                 message: "Password must contain at least one uppercase letter, one lowercase letter, one number, and be at least 8 characters long."
             });
         }
 
-        // Check if user already exists
         const existingUser = await User.findOne({ email: req.body.email });
         if (existingUser) {
             return res.render('register', { message: "Email already in use" });
@@ -168,17 +185,20 @@ app.post('/register', checkNotAuthenticated, async (req, res) => {
         
         sendConfirmationEmail(user.email, confirmationID);
         
+        console.log('New user registered:', user.email);
         res.redirect('/confirmation');
     } catch (error) {
-        console.error(error);
+        console.error('Error during registration:', error);
         res.render('register', { message: "An error occurred during registration" });
     }
 });
 
+// Route: Confirmation page
 app.get('/confirmation', (req, res) => {
     res.render('confirmation');
 });
 
+// Route: Confirm email
 app.get('/confirm/:randomID', async (req, res) => {
     try {
         const user = await User.findOneAndUpdate(
@@ -188,36 +208,45 @@ app.get('/confirm/:randomID', async (req, res) => {
         );
 
         if (!user) {
+            console.log('User not found for confirmation:', req.params.randomID);
             return res.status(404).send('User not found');
         }
 
+        console.log('User confirmed:', user.email);
         res.redirect('/login');
     } catch (err) {
-        console.error(err);
+        console.error('Error confirming email:', err);
         res.status(500).send('Error confirming email');
     }
 });
 
+// Route: Forgot password page
 app.get('/forgot-password', (req, res) => {
     res.render('forgot-password');
 });
 
+// Route: Handle forgot password
 app.post('/forgot-password', forgotPassword);
 
+// Route: Reset password page
 app.get('/reset-password/:id', async (req, res) => {
     const { id } = req.params;
     const user = await User.findOne({ confirmationID: id });
     if (!user) {
+        console.log('User not found for password reset:', id);
         return res.status(404).send('User not found');
     }
     if (user.resetPasswordExpires < Date.now()) {
+        console.log('Password reset link expired for user:', user.email);
         return res.status(400).send('Password reset link has expired');
     }
     res.render('reset-password', { id });
 });
 
+// Route: Handle reset password
 app.post('/reset-password', resetPassword);
 
+// Route: Google OAuth login
 app.get('/auth/google',
     passport.authenticate('google', { 
         scope: ['profile', 'email'],
@@ -225,13 +254,16 @@ app.get('/auth/google',
     })
 );
 
+// Route: Google OAuth callback
 app.get('/auth/google/callback', 
     passport.authenticate('google', { failureRedirect: '/login' }),
     (req, res) => {
+        console.log('User logged in via Google:', req.user.email);
         res.redirect('/');
     }
 );
 
+// Route: Create short URL
 app.post('/shortUrls', async (req, res) => {
     let short = req.body.shortUrl || await shortId.generate();
     const expirationDate = req.body.expirationDate ? new Date(req.body.expirationDate) : null;
@@ -243,6 +275,7 @@ app.post('/shortUrls', async (req, res) => {
     res.redirect('/');
 });
 
+// Route: Redirect short URL to full URL
 app.get('/:shortUrl', async (req, res) => {
     /* the following line is to prevent the browser from prefetching the url
      * When the user paste a link in the browser, the browser will prefetch the url
@@ -252,7 +285,7 @@ app.get('/:shortUrl', async (req, res) => {
      * the amount of click is increase by 2, to prevent that, we need to stop browser from prefatching the url
      * 
      * it is a hack, but it works       
-     */         
+     */
     const purpose = req.get('Purpose') || req.get('X-Purpose');
   
     if (purpose === 'prefetch' || purpose === 'preview') {
@@ -265,20 +298,27 @@ app.get('/:shortUrl', async (req, res) => {
         { new: true }
     );
 
-    if (!result) return res.sendStatus(404);
+    if (!result) {
+        console.log('Short URL not found:', req.params.shortUrl);
+        return res.sendStatus(404);
+    }
 
     if (result.clicks % result.clickCountToSendEmail === 0) {
         sendClickCountReachedEmail(result);
     }
 
+    console.log('Redirecting:', req.params.shortUrl, 'to', result.fullUrl);
     res.redirect(result.fullUrl);
 });
 
+// Route: Delete URL
 app.post('/delete-url', async (req, res) => {
     await Url.deleteOne({ shortUrl: req.body.shortUrl });
+    console.log('URL deleted:', req.body.shortUrl);
     res.redirect('/');
 });
 
+// Route: Update full URL
 app.post('/updateFullURL', async (req, res) => {
     const { fullUrl, shortUrl } = req.body;
     const short = shortUrl.replace(process.env.SERVER, "");
@@ -290,20 +330,21 @@ app.post('/updateFullURL', async (req, res) => {
         );
         
         if (!user) {
-            console.log('URL not found when searching using shortUrl ', short);
+            console.log('URL not found when searching using shortUrl:', short);
             return res.json({ success: false, message: 'URL not found' });
         }
         
-        console.log('URL updated successfully');
+        console.log('Full URL updated successfully:', short);
         res.json({ success: true });
     } catch (error) {
-        console.error('Error updating URL:', error);
+        console.error('Error updating full URL:', error);
         res.json({ success: false, message: 'Failed to update URL' });
     }
 });
 
+// Route: Update short URL
 app.post('/updateShortUrl', async (req, res) => {
-    console.log('Received update request: ', req.body.originalShortUrl);
+    console.log('Received update request:', req.body.originalShortUrl);
     const { shortUrl, originalShortUrl } = req.body;
     const short = shortUrl.replace(process.env.SERVER, "");
     const original = originalShortUrl.replace(process.env.SERVER, "");
@@ -322,21 +363,24 @@ app.post('/updateShortUrl', async (req, res) => {
         if (!url) {
             return res.json({ success: false, message: 'URL not found' });
         }
-        console.log('URL updated successfully');
+        console.log('Short URL updated successfully:', original, 'to', short);
         res.json({ success: true });
     } catch (error) {
-        console.error('Error updating URL:', error);
+        console.error('Error updating short URL:', error);
         res.json({ success: false, message: 'Failed to update URL' });
     }
 });
 
+// Route: Logout
 app.delete('/logout', function(req, res, next) {
     req.logOut(function(err){
         if (err) { return next(err); }
+        console.log('User logged out');
         res.redirect('/login');
     });
 });
 
+// Configure email transporter
 const transporter = nodemailer.createTransport({
     service: config.email.service,
     auth: {
@@ -345,10 +389,12 @@ const transporter = nodemailer.createTransport({
     },
 });
 
+// Function to handle forgot password
 async function forgotPassword(req, res) {
     const { email } = req.body;
     const user = await User.findOne({ email });
     if (!user) {
+      console.log('User not found for forgot password:', email);
       return res.status(404).send('User not found');
     }
     const randomID = crypto.randomBytes(32).toString('hex');
@@ -364,14 +410,15 @@ async function forgotPassword(req, res) {
     };
     transporter.sendMail(mailOptions, (error, info) => {
       if (error) {
-        console.log(error);
+        console.error('Error sending password reset email:', error);
       } else {
-        console.log('Email sent: ' + info.response);
+        console.log('Password reset email sent:', info.response);
       }
     });
     res.render('confirmation');
 }
 
+// Function to handle password reset
 async function resetPassword(req, res) {
     const { id, password, confirmPassword } = req.body;
 
@@ -389,13 +436,16 @@ async function resetPassword(req, res) {
         { new: true }
     );
     if (!user) {
+      console.log('User not found for password reset:', id);
       return res.status(404).send('User not found');
     }
+    console.log('Password reset successfully for user:', user.email);
     res.send('Password reset successfully');
 } 
 
+// Start the server
 app.listen(process.env.PORT);
-console.info("Listening on port "+ process.env.PORT);
+console.log("Server listening on port " + process.env.PORT);
 
 // Check for expired URLs every hour and remove them
 setInterval(async () => {
