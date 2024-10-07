@@ -44,7 +44,7 @@
                         <td style="vertical-align: middle;">
                             <form action="/url-details" method="post" target="_blank">
                                 <input type="hidden" name="shortUrl" value="<%= shortUrl.shortUrl %>">
-                                <button type="submit">
+                                <button type="submit" class="action-button details-button">
                                     <i class="fas fa-external-link-alt"></i>
                                 </button>
                             </form>
@@ -52,13 +52,13 @@
                         <td style="vertical-align: middle;">
                             <form action="/delete-url" method="post">
                                 <input type="hidden" name="shortUrl" value="<%= shortUrl.shortUrl %>">
-                                <button type="submit" class="delete-button">
+                                <button type="submit" class="action-button delete-button">
                                     <i class="fas fa-trash-alt"></i>
                                 </button>
                             </form>
                         </td>
                         <td style="vertical-align: middle;">
-                            <button class="copy-button" data-clipboard-text="http://localhost:8800/<%= shortUrl.shortUrl %>">
+                            <button class="action-button copy-button" data-clipboard-text="<%= shortUrl.shortUrl %>">
                                 <i class="fas fa-copy"></i>
                             </button>
                         </td> 
@@ -161,6 +161,23 @@
             }
         });
 
+        // Add event listener for storage changes
+        window.addEventListener('storage', function(e) {
+            if (e.key === 'urlUpdated' && e.newValue === 'true') {
+                updateUrlTable();
+                localStorage.removeItem('urlUpdated');
+            }
+        });
+
+        // Function to update the table with new data
+        function updateUrlTable() {
+            fetch('/fetch-urls')
+                .then(response => response.json())
+                .then(data => {
+                    updateTable(data.urls);
+                })
+                .catch(err => console.error('Error fetching updated data:', err));
+        }
 
         // Initial application of the copy functionality when page loads
         applyCopyFunctionality();

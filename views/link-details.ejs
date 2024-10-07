@@ -198,6 +198,12 @@
                         // Update QR code
                         const qrImage = document.getElementById('qrImage');
                         qrImage.src = data.qrCode;
+
+                        // Set flag in local storage after successful update
+                        // This flag is used to trigger an update of the URL table on the main page
+                        // When the user navigates back to the main page, it will check for this flag
+                        // and refresh the table data if the flag is set to 'true'
+                        localStorage.setItem('urlUpdated', 'true');
                     }
                 }).catch(err => console.error('Error updating URLs:', err));
             });
@@ -225,6 +231,12 @@
                         document.getElementById('saveShortUrlBtn').classList.add('hidden');
                         document.getElementById('originalShortUrl').value = updatedShortUrl;
                         document.getElementById('cancelShortUrlBtn').classList.add('hidden');
+
+                        // Set flag in local storage after successful update
+                        // This flag is used to trigger an update of the URL table on the main page
+                        // When the user navigates back to the main page, it will check for this flag
+                        // and refresh the table data if the flag is set to 'true'
+                        localStorage.setItem('urlUpdated', 'true');
                     }
                 }).catch(err => console.error('Error updating short URL:', err));
             });

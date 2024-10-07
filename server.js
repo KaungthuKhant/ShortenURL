@@ -479,7 +479,7 @@ app.listen(process.env.PORT);
 console.log("Server listening on port " + process.env.PORT);
 
 // Check for expired URLs every hour and remove them
-setInterval(async () => {
+async function checkForExpiredUrls() {
     const now = new Date();
     try {
         console.log("Checking for expired URLs...");
@@ -510,7 +510,7 @@ setInterval(async () => {
     } catch (error) {
         console.error("Error checking for expired URLs:", error);
     }
-}, 60 * 60 * 1000); // Run every hour
+}
 
 // Function to send reminder emails for URLs about to expire
 async function sendExpirationReminders() {
@@ -549,4 +549,6 @@ async function sendExpirationReminders() {
 }
 
 // Run the reminder function every 12 hours
-setInterval(sendExpirationReminders, 12 * 60 * 60 * 1000);
+setInterval(sendExpirationReminders, 12 * 60 * 60 * 1000);   
+// Run the expired URL function every hour
+setInterval(checkForExpiredUrls, 60 * 60 * 1000);
