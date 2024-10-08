@@ -100,7 +100,7 @@ async function saveLink(fullLink, shortLink, userId, expirationDate, clickCounts
 // Route: Home page
 app.get('/', checkAuthenticated, async (req, res) => {
     const links = await Url.find({ userId: req.user._id });
-    res.render('index.ejs', { name: req.user.name, email: req.user.email, urls: links });
+    res.render('index.ejs', { req: req,name: req.user.name, email: req.user.email, urls: links });
 });
 
 

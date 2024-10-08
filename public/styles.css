@@ -228,7 +228,7 @@ a:hover {
 
 .action-button i {
     color: #ecf0f1; /* Light color for the icon */
-    font-size: 1.2em; /* Adjust size as needed */
+    font-size: 1.2em; 
     transition: all 0.3s ease;
 }
 
@@ -238,7 +238,7 @@ a:hover {
 }
 
 .action-button:hover i {
-    color: #3498db; /* Change color on hover */
+    color: #3498db; 
 }
 
 /* Specific colors for different actions */

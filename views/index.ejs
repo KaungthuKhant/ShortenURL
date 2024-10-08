@@ -58,7 +58,7 @@
                             </form>
                         </td>
                         <td style="vertical-align: middle;">
-                            <button class="action-button copy-button" data-clipboard-text="<%= shortUrl.shortUrl %>">
+                            <button class="action-button copy-button" data-clipboard-text="<%= `${req.protocol}://${req.get('host')}/${shortUrl.shortUrl}` %>">
                                 <i class="fas fa-copy"></i>
                             </button>
                         </td> 
