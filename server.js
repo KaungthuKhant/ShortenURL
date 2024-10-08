@@ -17,7 +17,6 @@ const QRCode = require('qrcode');
 const mongoose = require("mongoose");
 
 // Import local modules and configurations
-const config = require('./config');
 const User = require("./models/User");
 const Url = require("./models/URL");
 const { checkPassword, sendConfirmationEmail, sendClickCountReachedEmail } = require('./utils');
@@ -60,30 +59,59 @@ app.use((req, res, next) => {
     next();
 });
 
-// Function to save a new user
+/**
+ * Function to save a new user
+ * 
+ * This function creates a new User document in the database with the provided information.
+ * It generates a unique confirmation ID for email verification purposes.
+ * 
+ * @param {string} name - The user's name
+ * @param {string} email - The user's email address
+ * @param {string} password - The user's password (should be pre-hashed)
+ * @param {string} googleId - The user's Google ID (if using Google OAuth)
+ * @returns {Promise<User>} The saved user document
+ */
 async function saveUser(name, email, password, googleId) {
+    // Create a new User instance with provided data
     const user = new User({
         name,
         email,
         password,
         googleId,
-        confirmationID: crypto.randomBytes(16).toString('hex')
+        confirmationID: crypto.randomBytes(16).toString('hex') // Generate a unique confirmation ID
     });
+    
+    // Save the user to the database
     await user.save();
     console.log('New user saved:', user.email);
     return user;
 }
 
-// Function to save a new short link
+/**
+ * Function to save a new short link
+ * 
+ * This function creates a new Url document in the database, representing a shortened URL.
+ * It checks for existing short URLs to avoid duplicates and sets an expiration date if provided.
+ * 
+ * @param {string} fullLink - The original, full URL
+ * @param {string} shortLink - The generated short URL
+ * @param {string} userId - The ID of the user creating this link
+ * @param {Date} expirationDate - The date when this link should expire (optional)
+ * @param {number} clickCountsToNotify - The number of clicks after which to notify the user
+ * @returns {Promise<Url|null>} The saved Url document, or null if the short URL already exists
+ */
 async function saveLink(fullLink, shortLink, userId, expirationDate, clickCountsToNotify) {
+    // Check if the short URL already exists
     const existingLink = await Url.findOne({ shortUrl: shortLink });
     if (existingLink) {
         console.log("Short URL already in use:", shortLink);
         return null;
     }
 
+    // Set expiration date to 7 days from now if not provided
     const expiryDate = expirationDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
+    // Create a new Url instance
     const link = new Url({
         fullUrl: fullLink,
         shortUrl: shortLink,
@@ -92,6 +120,7 @@ async function saveLink(fullLink, shortLink, userId, expirationDate, clickCounts
         clickCountToSendEmail: Number(clickCountsToNotify),
     });
 
+    // Save the link to the database
     await link.save();
     console.log('New link saved:', link.shortUrl);
     return link;
@@ -420,19 +449,35 @@ const transporter = nodemailer.createTransport({
     },
 });
 
-// Function to handle forgot password
+/**
+ * Function to handle forgot password requests
+ * 
+ * This function generates a unique reset token, saves it to the user's document,
+ * and sends an email with a reset link to the user's email address.
+ * 
+ * @param {Object} req - The request object
+ * @param {Object} res - The response object
+ */
 async function forgotPassword(req, res) {
     const { email } = req.body;
+    
+    // Find the user by email
     const user = await User.findOne({ email });
     if (!user) {
       console.log('User not found for forgot password:', email);
       return res.status(404).send('User not found');
     }
+    
+    // Generate a random reset token
     const randomID = crypto.randomBytes(32).toString('hex');
     user.confirmationID = randomID;
     user.resetPasswordExpires = Date.now() + 600000; // 10 minutes
     await user.save();
+    
+    // Create the reset link
     const link = `${process.env.SERVER}reset-password/${randomID}`;
+    
+    // Prepare and send the email
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: user.email,
@@ -446,30 +491,47 @@ async function forgotPassword(req, res) {
         console.log('Password reset email sent:', info.response);
       }
     });
+    
     res.render('confirmation');
 }
 
-// Function to handle password reset
+/**
+ * Function to handle password reset
+ * 
+ * This function validates the new password, updates the user's password in the database,
+ * and sends a confirmation response.
+ * 
+ * @param {Object} req - The request object
+ * @param {Object} res - The response object
+ */
 async function resetPassword(req, res) {
     const { id, password, confirmPassword } = req.body;
 
+    // Validate the new password
     if (!checkPassword(password)) {
         return res.render('reset-password', {id: id, message: "Password is not valid. Password must contain at least one uppercase letter, one lowercase letter, one number and 8 or more characters." });
     }
 
+    // Check if passwords match
     if (password !== confirmPassword) {
       return res.status(400).send('Passwords do not match');
     }
+    
+    // Hash the new password
     const hashedPassword = await bcrypt.hash(password, 10);
+    
+    // Update the user's password in the database
     const user = await User.findOneAndUpdate(
         { confirmationID: id },
         { password: hashedPassword },
         { new: true }
     );
+    
     if (!user) {
       console.log('User not found for password reset:', id);
       return res.status(404).send('User not found');
     }
+    
     console.log('Password reset successfully for user:', user.email);
     res.send('Password reset successfully');
 } 
@@ -478,16 +540,25 @@ async function resetPassword(req, res) {
 app.listen(process.env.PORT);
 console.log("Server listening on port " + process.env.PORT);
 
-// Check for expired URLs every hour and remove them
+/**
+ * Function to check for expired URLs and remove them
+ * 
+ * This function runs periodically to find and delete expired URLs from the database.
+ * It also sends notification emails to users whose URLs have expired.
+ */
 async function checkForExpiredUrls() {
     const now = new Date();
     try {
         console.log("Checking for expired URLs...");
+        
+        // Find all expired URLs
         const expiredUrls = await Url.find({ urlExpirationDate: { $lt: now } });
         
+        // Notify users and delete expired URLs
         for (const url of expiredUrls) {
             const user = await User.findById(url.userId);
             if (user && user.email) {
+                // Prepare and send notification email
                 const mailOptions = {
                     from: process.env.EMAIL_USER,
                     to: user.email,
@@ -505,6 +576,7 @@ async function checkForExpiredUrls() {
             }
         }
         
+        // Delete all expired URLs from the database
         const result = await Url.deleteMany({ urlExpirationDate: { $lt: now } });
         console.log(`${result.deletedCount} expired links deleted and users notified.`);
     } catch (error) {
@@ -512,19 +584,28 @@ async function checkForExpiredUrls() {
     }
 }
 
-// Function to send reminder emails for URLs about to expire
+/**
+ * Function to send reminder emails for URLs about to expire
+ * 
+ * This function runs periodically to find URLs that are about to expire
+ * and sends reminder emails to the users who own these URLs.
+ */
 async function sendExpirationReminders() {
     const now = new Date();
     const twentyFourHoursFromNow = new Date(now.getTime() + 48 * 60 * 60 * 1000);
     try {
         console.log("Checking for URLs about to expire...");
+        
+        // Find URLs that will expire in the next 48 hours
         const aboutToExpireUrls = await Url.find({ 
             urlExpirationDate: { $gt: now, $lt: twentyFourHoursFromNow } 
         });
         
+        // Send reminder emails for each URL about to expire
         for (const url of aboutToExpireUrls) {
             const user = await User.findById(url.userId);
             if (user && user.email) {
+                // Prepare and send reminder email
                 const mailOptions = {
                     from: process.env.EMAIL_USER,
                     to: user.email,
