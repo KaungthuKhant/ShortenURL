@@ -27,7 +27,7 @@ const { checkAuthenticated, checkNotAuthenticated } = require('./middleware');
 const app = express();
 
 // Connect to MongoDB
-mongoose.connect(process.env.MONGODB_URI || "mongodb://localhost/ShortURLPractice");
+mongoose.connect(process.env.MONGODB_URI);
 console.log('Connected to MongoDB');
 
 // Initialize Passport configuration
@@ -413,10 +413,10 @@ app.delete('/logout', function(req, res, next) {
 
 // Configure email transporter
 const transporter = nodemailer.createTransport({
-    service: config.email.service,
+    service: process.env.EMAIL_SERVICE,
     auth: {
-      user: config.email.user,
-      pass: config.email.pass,
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
     },
 });
 
@@ -432,9 +432,9 @@ async function forgotPassword(req, res) {
     user.confirmationID = randomID;
     user.resetPasswordExpires = Date.now() + 600000; // 10 minutes
     await user.save();
-    const link = `http://localhost:${config.server.port}/reset-password/${randomID}`;
+    const link = `${process.env.SERVER}reset-password/${randomID}`;
     const mailOptions = {
-      from: config.email.user,
+      from: process.env.EMAIL_USER,
       to: user.email,
       subject: 'Reset Password',
       text: `Click on this link to reset your password: ${link}\nThe password reset link expires in 10 minutes.`
@@ -489,7 +489,7 @@ async function checkForExpiredUrls() {
             const user = await User.findById(url.userId);
             if (user && user.email) {
                 const mailOptions = {
-                    from: config.email.user,
+                    from: process.env.EMAIL_USER,
                     to: user.email,
                     subject: 'URL Expired and Deleted',
                     text: `Your shortened URL (${url.fullUrl}) has expired and been deleted.`
@@ -526,7 +526,7 @@ async function sendExpirationReminders() {
             const user = await User.findById(url.userId);
             if (user && user.email) {
                 const mailOptions = {
-                    from: config.email.user,
+                    from: process.env.EMAIL_USER,
                     to: user.email,
                     subject: 'URL About to Expire',
                     text: `Your shortened URL (${url.fullUrl}) will expire in less than 48 hours.`
