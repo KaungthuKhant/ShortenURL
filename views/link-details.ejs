@@ -104,6 +104,19 @@
 
     <script>
         console.log('Script started');
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden) {
+                fetch('/check-session')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (!data.valid) {
+                            window.location.href = '/login?timeout=true';
+                        }
+                    })
+                    .catch(err => console.error('Error checking session:', err));
+            }
+        });
+
         document.addEventListener('DOMContentLoaded', function() {
 
             // Handle Copy URL functionality

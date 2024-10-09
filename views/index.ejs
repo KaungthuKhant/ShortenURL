@@ -152,12 +152,24 @@
         // Detect when the user comes back to this tab from another tab
         document.addEventListener('visibilitychange', function() {
             if (!document.hidden) {
-                fetch('/fetch-urls')
+                // First, check the session
+                fetch('/check-session')
                     .then(response => response.json())
                     .then(data => {
-                        updateTable(data.urls);
+                        if (!data.valid) {
+                            window.location.href = '/login?timeout=true';
+                        } else {
+                            // If session is valid, fetch updated URLs
+                            return fetch('/fetch-urls');
+                        }
                     })
-                    .catch(err => console.error('Error fetching updated data:', err));
+                    .then(response => {
+                        if (response) return response.json();
+                    })
+                    .then(data => {
+                        if (data && data.urls) updateTable(data.urls);
+                    })
+                    .catch(err => console.error('Error:', err));
             }
         });
 

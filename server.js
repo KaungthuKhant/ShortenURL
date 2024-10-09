@@ -20,7 +20,7 @@ const mongoose = require("mongoose");
 const User = require("./models/User");
 const Url = require("./models/URL");
 const { checkPassword, sendConfirmationEmail, sendClickCountReachedEmail } = require('./utils');
-const { checkAuthenticated, checkNotAuthenticated } = require('./middleware');
+const { checkAuthenticated, checkNotAuthenticated, sessionTimeout } = require('./middleware');
 
 // Initialize Express app
 const app = express();
@@ -46,8 +46,13 @@ app.use(flash());
 app.use(session({
     secret: process.env.SESSION_SECRET,
     resave: false,
-    saveUninitialized: false
+    saveUninitialized: false,
+    cookie: { 
+        secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
+        maxAge: 30 * 60 * 1000 // 30 minutes
+    }
 }));
+app.use('/authenticated-routes', sessionTimeout); // Apply to all routes that require authentication
 app.use(passport.initialize());
 app.use(passport.session());
 app.use(methodOverride('_method'));
@@ -195,7 +200,11 @@ app.post('/url-details', async (req, res) => {
 
 // Route: Login page
 app.get('/login', checkNotAuthenticated, (req, res) => {
-    res.render('login.ejs');
+    const timeout = req.query.timeout === 'true';
+    res.render('login.ejs', { 
+        timeout: timeout,
+        message: timeout ? 'Your session has expired. Please log in again.' : null
+    });
 });
 
 // Route: Handle login
@@ -333,42 +342,6 @@ app.post('/shortUrls', async (req, res) => {
     res.redirect('/');
 });
 
-// Route: Redirect short URL to full URL
-app.get('/:shortUrl', async (req, res) => {
-    /* the following line is to prevent the browser from prefetching the url
-     * When the user paste a link in the browser, the browser will prefetch the url
-     * this cause this route to be called and increase the click by one
-     * when the user actually click enter and go to the shortUrl, this route gets call agian
-     * increasing the click one more time so when the user go to the shortUrl by pasting
-     * the amount of click is increase by 2, to prevent that, we need to stop browser from prefatching the url
-     * 
-     * it is a hack, but it works       
-     */
-    const purpose = req.get('Purpose') || req.get('X-Purpose');
-  
-    if (purpose === 'prefetch' || purpose === 'preview') {
-        return res.status(204).end();
-    }
-    
-    const result = await Url.findOneAndUpdate(
-        { shortUrl: req.params.shortUrl },
-        { $inc: { clicks: 1 } },
-        { new: true }
-    );
-
-    if (!result) {
-        console.log('Short URL not found:', req.params.shortUrl);
-        return res.sendStatus(404);
-    }
-
-    if (result.clicks % result.clickCountToSendEmail === 0) {
-        sendClickCountReachedEmail(result);
-    }
-
-    console.log('Redirecting:', req.params.shortUrl, 'to', result.fullUrl);
-    res.redirect(result.fullUrl);
-});
-
 // Route: Delete URL
 app.post('/delete-url', async (req, res) => {
     await Url.deleteOne({ shortUrl: req.body.shortUrl });
@@ -431,6 +404,29 @@ app.post('/updateShortUrl', async (req, res) => {
     }
 });
 
+// ===========================================================================================================================================================
+app.get('/check-session', (req, res) => {
+    if (req.session && req.session.lastActivity) {
+        const currentTime = Date.now();
+        const timeSinceLastActivity = currentTime - req.session.lastActivity;
+        
+        if (timeSinceLastActivity > 30 * 60 * 1000) { // 30 minutes
+            req.session.destroy((err) => {
+                if (err) {
+                    console.error('Session destruction error:', err);
+                }
+                res.json({ valid: false });
+            });
+        } else {
+            req.session.lastActivity = currentTime;
+            res.json({ valid: true });
+        }
+    } else {
+        // If there's no session or lastActivity, consider it invalid
+        res.json({ valid: false });
+    }
+});
+
 // Route: Logout
 app.delete('/logout', function(req, res, next) {
     req.logOut(function(err){
@@ -447,6 +443,43 @@ const transporter = nodemailer.createTransport({
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS,
     },
+});
+
+
+// Route: Redirect short URL to full URL
+app.get('/:shortUrl', async (req, res) => {
+    /* the following line is to prevent the browser from prefetching the url
+     * When the user paste a link in the browser, the browser will prefetch the url
+     * this cause this route to be called and increase the click by one
+     * when the user actually click enter and go to the shortUrl, this route gets call agian
+     * increasing the click one more time so when the user go to the shortUrl by pasting
+     * the amount of click is increase by 2, to prevent that, we need to stop browser from prefatching the url
+     * 
+     * it is a hack, but it works       
+     */
+    const purpose = req.get('Purpose') || req.get('X-Purpose');
+  
+    if (purpose === 'prefetch' || purpose === 'preview') {
+        return res.status(204).end();
+    }
+    
+    const result = await Url.findOneAndUpdate(
+        { shortUrl: req.params.shortUrl },
+        { $inc: { clicks: 1 } },
+        { new: true }
+    );
+
+    if (!result) {
+        console.log('Short URL not found:', req.params.shortUrl);
+        return res.sendStatus(404);
+    }
+
+    if (result.clicks % result.clickCountToSendEmail === 0) {
+        sendClickCountReachedEmail(result);
+    }
+
+    console.log('Redirecting:', req.params.shortUrl, 'to', result.fullUrl);
+    res.redirect(result.fullUrl);
 });
 
 /**
