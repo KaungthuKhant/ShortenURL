@@ -1,5 +1,7 @@
 const nodemailer = require('nodemailer');
 const dotenv = require('dotenv');
+const dns = require('dns');
+const { URL } = require('url');
 
 // Load environment variables from .env file
 dotenv.config();
@@ -14,6 +16,29 @@ const serverUrl = process.env.SERVER;
 if (!emailUser || !emailPass || !emailService || !serverUrl) {
     console.error('Missing required environment variables. Check .env file.');
     process.exit(1);
+}
+
+function isValidUrl(string) {
+    try {
+        new URL(string);
+        return true;
+    } catch (err) {
+        return false;
+    }
+}
+
+// Verify whether a given URL is accessible or exists by performing a DNS (Domain Name System) lookup
+function checkUrlExists(url) {
+    return new Promise((resolve) => {
+        const hostname = new URL(url).hostname;
+        dns.lookup(hostname, (err) => {
+            if (err) {
+                resolve(false);
+            } else {
+                resolve(true);
+            }
+        });
+    });
 }
 
 function checkPassword(password) {
@@ -67,6 +92,8 @@ function sendClickCountReachedEmail(link) {
 }
 
 module.exports = {
+    isValidUrl,
+    checkUrlExists,
     checkPassword,
     sendConfirmationEmail,
     sendClickCountReachedEmail

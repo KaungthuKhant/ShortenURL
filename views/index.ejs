@@ -10,17 +10,18 @@
 <body>
         <h1>Welcome, <%= name %></h1>
         
+        <div id="errorMessage" class="error-message" style="color: #e65757; margin-bottom: 10px;"></div>
+
         <form action="/shortUrls" method="POST">
             <div class="form-row">
-                <input required placeholder="Enter URL to shorten" type="url" name="fullUrl" id="fullUrl">
-                <input type="text" placeholder="Custom Short URL" name="shortUrl" id="shortUrl">
-                <input type="number" placeholder="Notify at Clicks" name="clickCountsToNotify" id="clickCountsToNotify">
+                <input required placeholder="Enter URL to shorten" type="url" name="fullUrl" id="fullUrl" class="url-input" value="<%= fullUrl || '' %>">
+                <input type="text" placeholder="Custom Short URL" name="shortUrl" id="shortUrl" value="<%= shortUrl || '' %>">
+                <input type="number" placeholder="Notify at Clicks" name="clickCountsToNotify" id="clickCountsToNotify" value="<%= clickCountsToNotify || '' %>">
                 <!--For expiration date, prevent the users from entering the value from keyboard using onkeydown event-->
                 <!--This will make sure user can only click to select the date and the expiration date for the links will be limited-->
-                <input type="date" placeholder="Expiration Date (optional)" name="expirationDate" id="expirationDate" onkeydown="return false"> 
+                <input type="date" placeholder="Expiration Date (optional)" name="expirationDate" id="expirationDate" onkeydown="return false" value="<%= expirationDate || '' %>"> 
                 <input type="hidden" name="userEmail" id="userEmail" value="<%= email %>">
                 <button type="submit">Shorten</button>
-                
             </div>
         </form>
         
@@ -85,6 +86,26 @@
         
                 expirationDateInput.setAttribute('min', formatDate(today));
                 expirationDateInput.setAttribute('max', formatDate(maxDate));
+
+                document.addEventListener('DOMContentLoaded', function() {
+                    const urlInput = document.getElementById('fullUrl');
+                    const errorMessageDiv = document.getElementById('errorMessage');
+                    const urlError = "<%= error %>"; // Get the error message from the server
+
+                    if (urlError) {
+                        urlInput.style.borderColor = '#e65757'; // Red border for error
+                        urlInput.style.boxShadow = '0 0 5px rgba(230, 87, 87, 0.5)'; // Red shadow for error
+                        errorMessageDiv.textContent = decodeURIComponent(urlError);
+                        errorMessageDiv.style.display = 'block';
+
+                        // Remove error-specific styles and hide the error message when the user starts typing
+                        urlInput.addEventListener('input', function() {
+                            this.style.borderColor = '';
+                            this.style.boxShadow = '';
+                            errorMessageDiv.style.display = 'none';
+                        });
+                    }
+                });
             </script>
         </table>
         

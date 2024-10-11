@@ -19,7 +19,7 @@ const mongoose = require("mongoose");
 // Import local modules and configurations
 const User = require("./models/User");
 const Url = require("./models/URL");
-const { checkPassword, sendConfirmationEmail, sendClickCountReachedEmail } = require('./utils');
+const { checkPassword, sendConfirmationEmail, sendClickCountReachedEmail, isValidUrl, checkUrlExists } = require('./utils');
 const { checkAuthenticated, checkNotAuthenticated, sessionTimeout } = require('./middleware');
 
 // Initialize Express app
@@ -48,8 +48,10 @@ app.use(session({
     resave: false,
     saveUninitialized: false,
     cookie: { 
-        secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
-        maxAge: 30 * 60 * 1000 // 30 minutes
+        // Use secure cookies in production, this will send the cookie only over HTTPS
+        // if secure is false, the cookie will be sent over HTTP
+        secure: process.env.NODE_ENV === 'production', 
+        maxAge: parseInt(process.env.SESSION_TIMEOUT) * 60 * 1000 // Convert minutes to milliseconds
     }
 }));
 app.use('/authenticated-routes', sessionTimeout); // Apply to all routes that require authentication
@@ -134,7 +136,17 @@ async function saveLink(fullLink, shortLink, userId, expirationDate, clickCounts
 // Route: Home page
 app.get('/', checkAuthenticated, async (req, res) => {
     const links = await Url.find({ userId: req.user._id });
-    res.render('index.ejs', { req: req,name: req.user.name, email: req.user.email, urls: links });
+    res.render('index.ejs', { 
+        req: req,
+        name: req.user.name, 
+        email: req.user.email, 
+        urls: links,
+        error: req.query.error || null,
+        fullUrl: req.query.fullUrl || '',
+        shortUrl: req.query.shortUrl || '',
+        clickCountsToNotify: req.query.clickCountsToNotify || '',
+        expirationDate: req.query.expirationDate || ''
+    });
 });
 
 
@@ -325,21 +337,58 @@ app.get('/auth/google/callback',
 );
 
 // Route: Create short URL
+
 app.post('/shortUrls', async (req, res) => {
-    let short = req.body.shortUrl || await shortId.generate();
+    let fullUrl = req.body.fullUrl;
+    let short = req.body.shortUrl;
+    let clickCountsToNotify = req.body.clickCountsToNotify;
+    let expirationDate = req.body.expirationDate ? new Date(req.body.expirationDate) : null;
     let userEmail = req.body.userEmail;
 
-    // get the user id from the email
-    const user = await User.findOne({ email: userEmail });
-    const userId = user._id;
-
-    const expirationDate = req.body.expirationDate ? new Date(req.body.expirationDate) : null;
-
-    const link = await saveLink(req.body.fullUrl, short, userId, expirationDate, req.body.clickCountsToNotify);
-    if (!link) {
-        return res.status(400).send('Short URL already in use');
+    // Validate URL format
+    if (!isValidUrl(fullUrl)) {
+        return res.redirect('/?error=' + encodeURIComponent('Invalid URL format') +
+        '&fullUrl=' + encodeURIComponent(fullUrl) +
+        '&shortUrl=' + encodeURIComponent(short) +
+        '&clickCountsToNotify=' + encodeURIComponent(clickCountsToNotify) +
+        '&expirationDate=' + encodeURIComponent(req.body.expirationDate));
     }
-    res.redirect('/');
+
+    try {
+        // Check if the URL exists by performing a DNS lookup
+        const urlExists = await checkUrlExists(fullUrl);
+        if (!urlExists) {
+            return res.redirect('/?error=' + encodeURIComponent('The provided URL does not exist or is not accessible') +
+            '&fullUrl=' + encodeURIComponent(fullUrl) +
+            '&shortUrl=' + encodeURIComponent(short) +
+            '&clickCountsToNotify=' + encodeURIComponent(clickCountsToNotify) +
+            '&expirationDate=' + encodeURIComponent(req.body.expirationDate));
+        }
+
+        // Get the user id from the email
+        const user = await User.findOne({ email: userEmail });
+        if (!user) {
+            return res.redirect('/?error=' + encodeURIComponent('User not found'));
+        }
+        const userId = user._id;
+
+        const link = await saveLink(fullUrl, short, userId, expirationDate, clickCountsToNotify);
+        if (!link) {
+            return res.redirect('/?error=' + encodeURIComponent('Short URL already in use') +
+            '&fullUrl=' + encodeURIComponent(fullUrl) +
+            '&shortUrl=' + encodeURIComponent(short) +
+            '&clickCountsToNotify=' + encodeURIComponent(clickCountsToNotify) +
+            '&expirationDate=' + encodeURIComponent(req.body.expirationDate));
+        }
+        res.redirect('/');
+    } catch (error) {
+        console.error('Error creating short URL:', error);
+        res.redirect('/?error=' + encodeURIComponent('An error occurred while creating the short URL') +
+        '&fullUrl=' + encodeURIComponent(fullUrl) +
+        '&shortUrl=' + encodeURIComponent(short) +
+        '&clickCountsToNotify=' + encodeURIComponent(clickCountsToNotify) +
+        '&expirationDate=' + encodeURIComponent(req.body.expirationDate));
+    }
 });
 
 // Route: Delete URL
@@ -405,19 +454,25 @@ app.post('/updateShortUrl', async (req, res) => {
 });
 
 // ===========================================================================================================================================================
+// Route: Check session validity
 app.get('/check-session', (req, res) => {
+    // Check if session and lastActivity exist
     if (req.session && req.session.lastActivity) {
         const currentTime = Date.now();
         const timeSinceLastActivity = currentTime - req.session.lastActivity;
         
-        if (timeSinceLastActivity > 30 * 60 * 1000) { // 30 minutes
+        // Check if session has expired (30 minutes of inactivity)
+        if (timeSinceLastActivity > parseInt(process.env.SESSION_TIMEOUT) * 60 * 1000) { 
+            // Destroy the session if it has expired
             req.session.destroy((err) => {
                 if (err) {
                     console.error('Session destruction error:', err);
                 }
+                // Respond with invalid session status
                 res.json({ valid: false });
             });
         } else {
+            // Update last activity time and respond with valid session status
             req.session.lastActivity = currentTime;
             res.json({ valid: true });
         }
