@@ -88,7 +88,6 @@ button {
 }
 
 button:hover {
-    background-color: #2980b9;
     transform: translateY(-2px);
     box-shadow: 0 2px 5px rgba(0,0,0,0.3);
 }
@@ -181,18 +180,6 @@ a:hover {
     align-items: center;
 }
 
-.delete-button {
-    background-color: #f39c12;
-}
-
-.delete-button:hover {
-    background-color: #d35400;
-}
-
-.delete-button:active {
-    background-color: #f39c12;
-}
-
 /* Responsive design */
 @media (max-width: 768px) {
     .form-row {
@@ -221,21 +208,19 @@ a:hover {
 
 /* Style for the Details, Delete, and Copy buttons */
 .action-button {
-    background-color: transparent;
+    background: none;
     border: none;
-    padding: 5px;
     cursor: pointer;
+    padding: 5px;
     transition: all 0.3s ease;
 }
 
 .action-button i {
-    color: #ecf0f1; /* Light color for the icon */
-    font-size: 1.2em; 
-    transition: all 0.3s ease;
+    transition: color 0.3s ease;
 }
 
 .action-button:hover {
-    background-color: rgba(255, 255, 255, 0.1); /* Slight highlight on hover */
+    opacity: 0.8;
     transform: translateY(-2px);
 }
 
@@ -244,9 +229,9 @@ a:hover {
 }
 
 /* Specific colors for different actions */
-.details-button:hover i { color: #3498db; } /* Blue */
-.delete-button:hover i { color: #e74c3c; } /* Red */
-.copy-button:hover i { color: #2ecc71; } /* Green */
+.details-button:hover i { color: #4a90e2; } /* Blue color for details button */
+.delete-button:hover i { color: #e74c3c; } /* Red color for delete button */
+.copy-button:hover i { color: #2ecc71; } /* Green color for copy button */
 
 /* Remove any existing button styles that might interfere */
 .action-button {

@@ -18,7 +18,7 @@ const mongoose = require("mongoose");
 
 // Import local modules and configurations
 const User = require("./models/User");
-const Url = require("./models/URL");
+const Url = require("./models/Url");
 const { checkPassword, sendConfirmationEmail, sendClickCountReachedEmail, isValidUrl, checkUrlExists } = require('./utils');
 const { checkAuthenticated, checkNotAuthenticated, sessionTimeout } = require('./middleware');
 
@@ -220,11 +220,20 @@ app.get('/login', checkNotAuthenticated, (req, res) => {
 });
 
 // Route: Handle login
+/*
 app.post('/login', checkNotAuthenticated, passport.authenticate('local', {
     successRedirect: '/',
     failureRedirect: '/login',
     failureFlash: true
 }));
+*/
+app.post('/login', passport.authenticate('local', {
+    failureRedirect: '/login', 
+    failureFlash: true
+}), (req, res) => {
+    req.session.lastActivity = Date.now();
+    res.redirect('/');
+});
 
 // Route: Registration page
 app.get('/register', checkNotAuthenticated, (req, res) => {
@@ -452,6 +461,34 @@ app.post('/updateShortUrl', async (req, res) => {
         res.json({ success: false, message: 'Failed to update URL' });
     }
 });
+
+// Route: Update notify user
+app.post('/updateNotifyUser', async (req, res) => {
+    console.log('Received update notify user request:', req.body);
+    const { shortUrl, notifyUser, notifyHoursBefore } = req.body;
+    const short = shortUrl.replace(process.env.SERVER, "");
+
+    try {
+        const url = await Url.findOneAndUpdate(
+            { shortUrl: short },
+            { notifyUser: notifyUser, notifyHoursBefore: notifyHoursBefore },
+            { new: true }       // Return the updated document
+        );
+
+        if (!url) {
+            console.log('URL not found when updating notifyUser:', short);
+            return res.json({ success: false, message: 'URL not found' });
+        }
+
+        console.log('Notify user updated successfully for:', short);
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error updating notify user:', error);
+        res.json({ success: false, message: 'Failed to update notify user' });
+    }
+});
+
+
 
 // ===========================================================================================================================================================
 // Route: Check session validity

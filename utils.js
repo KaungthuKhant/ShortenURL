@@ -62,7 +62,7 @@ function sendConfirmationEmail(email, confirmationID) {
         from: emailUser,
         to: email,
         subject: 'Confirm Your Email',
-        text: `Please click on this link to confirm your email: ${serverUrl}/confirm/${confirmationID}`
+        text: `Please click on this link to confirm your email: ${serverUrl}confirm/${confirmationID}`
     };
 
     transporter.sendMail(mailOptions, (error, info) => {
