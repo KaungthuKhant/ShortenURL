@@ -275,7 +275,6 @@ app.post('/register', checkNotAuthenticated, async (req, res) => {
     }
 });
 
-
 // Route: Confirmation page
 app.get('/confirmation', (req, res) => {
     res.render('confirmation');
