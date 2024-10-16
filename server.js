@@ -502,6 +502,37 @@ app.post('/updateNotifyUser', async (req, res) => {
 });
 
 
+// Route: Update URL expiration date
+app.post('/updateExpirationDate', async (req, res) => {
+    console.log('Received update expiration date request:', req.body);
+    const { shortUrl, date, time } = req.body;
+    const short = shortUrl.replace(process.env.SERVER, "");
+
+    try {
+        // Combine date and time into a single Date object
+        const expirationDate = new Date(`${date}T${time}:00.000+00:00`);
+
+        const url = await Url.findOneAndUpdate(
+            { shortUrl: short },
+            { urlExpirationDate: expirationDate },
+            { new: true }
+        );
+
+        if (!url) {
+            console.log('URL not found when updating expiration date:', short);
+            return res.json({ success: false, message: 'URL not found' });
+        }
+
+        console.log('Expiration date updated successfully for:', short);
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error updating expiration date:', error);
+        res.json({ success: false, message: 'Failed to update expiration date' });
+    }
+});
+
+
+
 
 // ===========================================================================================================================================================
 // Route: Check session validity

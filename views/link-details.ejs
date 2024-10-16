@@ -87,7 +87,23 @@
                     <p class="text-base font-semibold"><span class="text-gray-300">Clicks:</span> <span class="text-purple-400"><%= clicks %></span></p>
                 </div>
                 <div class="bg-gray-700 p-3 rounded-md shadow-sm hover:shadow-md transition-shadow duration-300">
-                    <p class="text-base font-semibold"><span class="text-gray-300">Expiration Date:</span> <span class="text-purple-400"><%= expirationDate ? new Date(expirationDate).toLocaleString() : 'No expiration date set.' %></span></p>
+                    <p id="expirationDateText" class="text-base font-semibold">
+                        <span class="text-gray-300">Expiration Date:</span>
+                        <span id="expirationDateValue" class="text-purple-400"><%= expirationDate ? new Date(expirationDate).toLocaleString() : 'No expiration date set.' %></span>
+                        <button id="editExpirationDateBtn" class="ml-2 text-blue-400 hover:text-blue-300 transition-colors duration-300">
+                            <i class="fas fa-pencil-alt"></i>
+                        </button>
+                    </p>
+                    <div id="expirationDateEdit" class="hidden">
+                        <input type="date" id="expirationDateInput" class="border border-gray-600 rounded p-1 bg-gray-800 text-gray-300">
+                        <input type="time" id="expirationTimeInput" class="border border-gray-600 rounded p-1 bg-gray-800 text-gray-300 ml-2">
+                        <button id="saveExpirationDateBtn" class="ml-2 text-green-400 hover:text-green-300 transition-colors duration-300">
+                            <i class="fas fa-save"></i> Save
+                        </button>
+                        <button id="cancelExpirationDateBtn" class="ml-2 text-red-400 hover:text-red-300 transition-colors duration-300">
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
+                    </div>
                 </div>
                 <div class="mt-4 flex justify-center">
                     <img id="qrImage" src="<%= qrCode %>" alt="QR Code" class="border-2 border-purple-500 p-2 rounded-md shadow-lg hover:shadow-xl transition-shadow duration-300 animate-pulse" style="max-width: 150px; max-height: 150px;">
@@ -137,6 +153,50 @@
                 }).catch(err => {
                     console.error('Error copying short URL:', err);
                 });
+            });
+
+            document.getElementById('editExpirationDateBtn').addEventListener('click', function() {
+                document.getElementById('expirationDateText').classList.add('hidden');
+                document.getElementById('expirationDateEdit').classList.remove('hidden');
+            });
+
+            document.getElementById('saveExpirationDateBtn').addEventListener('click', function() {
+                const date = document.getElementById('expirationDateInput').value;
+                const time = document.getElementById('expirationTimeInput').value;
+                const shortUrl = document.getElementById('shortUrlLink').href;
+
+                if (date && time) {
+                    fetch('/updateExpirationDate', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ shortUrl, date, time }),
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            const newDate = new Date(`${date}T${time}`);
+                            document.getElementById('expirationDateValue').textContent = newDate.toLocaleString();
+                            document.getElementById('expirationDateEdit').classList.add('hidden');
+                            document.getElementById('expirationDateText').classList.remove('hidden');
+                            document.getElementById('expirationDateEdit').classList.add('hidden');
+                        } else {
+                            console.error('Failed to update expiration date');
+                        }
+                    })
+                    .catch((error) => {
+                        console.error('Error:', error);
+                    });
+                } else {
+                    console.error('Date and time must be provided');
+                    // Optionally, you can display an error message to the user here
+                }
+            });
+
+            document.getElementById('cancelExpirationDateBtn').addEventListener('click', function() {
+                document.getElementById('expirationDateText').classList.remove('hidden');
+                document.getElementById('expirationDateEdit').classList.add('hidden');
             });
 
 
