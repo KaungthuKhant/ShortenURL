@@ -213,20 +213,32 @@ app.post('/url-details', async (req, res) => {
 // Route: Login page
 app.get('/login', checkNotAuthenticated, (req, res) => {
     const timeout = req.query.timeout === 'true';
+
+    // Check if there's a message in the session
+    if (req.session.message) {
+        // If there is, flash it and remove it from the session
+        req.flash('success', req.session.message);
+        delete req.session.message;
+    }
+
+    let message = null;
+    if (timeout) {
+        message = 'Your session has expired. Please log in again.';
+    } else {
+        const successMessages = req.flash('success');
+        if (successMessages.length > 0) {
+            message = successMessages[0];
+        }
+    }
+
+    console.log('Message:', message);
+
     res.render('login.ejs', { 
         timeout: timeout,
-        message: timeout ? 'Your session has expired. Please log in again.' : null
+        message: message
     });
 });
 
-// Route: Handle login
-/*
-app.post('/login', checkNotAuthenticated, passport.authenticate('local', {
-    successRedirect: '/',
-    failureRedirect: '/login',
-    failureFlash: true
-}));
-*/
 app.post('/login', passport.authenticate('local', {
     failureRedirect: '/login', 
     failureFlash: true
@@ -295,6 +307,7 @@ app.get('/confirm/:randomID', async (req, res) => {
         }
 
         console.log('User confirmed:', user.email);
+        req.session.message = 'Email confirmed successfully.';
         res.redirect('/login');
     } catch (err) {
         console.error('Error confirming email:', err);

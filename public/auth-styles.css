@@ -107,6 +107,14 @@ a:hover {
     text-decoration: underline;
 }
 
+p {
+    color: white;
+    font-size: clamp(0.9rem, 2vw, 1rem);
+    line-height: 1.5;
+    margin-bottom: 1rem;
+}
+
+
 .error {
     color: var(--error-color);
     text-align: center;
@@ -130,6 +138,12 @@ a:hover {
     align-items: center;
     gap: 0.5rem;
 }
+
+.alert {
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+}
+
 
 @media (max-width: 600px) {
     .auth-container {
