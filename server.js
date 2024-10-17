@@ -19,7 +19,7 @@ const mongoose = require("mongoose");
 // Import local modules and configurations
 const User = require("./models/User");
 const Url = require("./models/Url");
-const { checkPassword, sendConfirmationEmail, sendClickCountReachedEmail, isValidUrl, checkUrlExists } = require('./utils');
+const { sendConfirmationEmail, sendClickCountReachedEmail, isValidUrl, checkUrlExists, checkPassword, checkSession } = require('./utils');
 const { checkAuthenticated, checkNotAuthenticated, sessionTimeout } = require('./middleware');
 
 // Initialize Express app
@@ -212,29 +212,46 @@ app.post('/url-details', async (req, res) => {
 
 // Route: Login page
 app.get('/login', checkNotAuthenticated, (req, res) => {
-    const timeout = req.query.timeout === 'true';
+    let message = null;
+    let isTimeout = false;
 
-    // Check if there's a message in the session
-    if (req.session.message) {
-        // If there is, flash it and remove it from the session
-        req.flash('success', req.session.message);
-        delete req.session.message;
+    // Check if this is a first-time login attempt
+    const isFirstTimeLogin = !req.session || !req.session.lastActivity;
+
+    if (!isFirstTimeLogin) {
+        const sessionStatus = checkSession(req);
+
+        if (!sessionStatus.valid) {
+            if (sessionStatus.destroy) {
+                req.session.destroy((err) => {
+                    if (err) console.error('Session destruction error:', err);
+                });
+            }
+            message = 'Your session has expired. Please log in again.';
+            isTimeout = true;
+        }
     }
 
-    let message = null;
-    if (timeout) {
-        message = 'Your session has expired. Please log in again.';
-    } else {
-        const successMessages = req.flash('success');
-        if (successMessages.length > 0) {
-            message = successMessages[0];
+    // If it's not a timeout, check for other messages
+    if (!isTimeout) {
+        if (req.session && req.session.message) {
+            // If there's a message in the session, flash it and remove it
+            message = req.session.message;
+            req.flash('success', message);
+            delete req.session.message;
+        } else {
+            // Check for flash messages
+            const successMessages = req.flash('success');
+            if (successMessages.length > 0) {
+                message = successMessages[0];
+            }
         }
     }
 
     console.log('Message:', message);
 
     res.render('login.ejs', { 
-        timeout: timeout,
+        timeout: isTimeout,
         message: message
     });
 });
@@ -537,29 +554,15 @@ app.post('/updateExpirationDate', async (req, res) => {
 // ===========================================================================================================================================================
 // Route: Check session validity
 app.get('/check-session', (req, res) => {
-    // Check if session and lastActivity exist
-    if (req.session && req.session.lastActivity) {
-        const currentTime = Date.now();
-        const timeSinceLastActivity = currentTime - req.session.lastActivity;
-        
-        // Check if session has expired (30 minutes of inactivity)
-        if (timeSinceLastActivity > parseInt(process.env.SESSION_TIMEOUT) * 60 * 1000) { 
-            // Destroy the session if it has expired
-            req.session.destroy((err) => {
-                if (err) {
-                    console.error('Session destruction error:', err);
-                }
-                // Respond with invalid session status
-                res.json({ valid: false });
-            });
-        } else {
-            // Update last activity time and respond with valid session status
-            req.session.lastActivity = currentTime;
-            res.json({ valid: true });
-        }
+    console.log('Checking session validity');
+    const sessionStatus = checkSession(req);
+    if (sessionStatus.destroy) {
+        req.session.destroy((err) => {
+            if (err) console.error('Session destruction error:', err);
+            res.json({ valid: false });
+        });
     } else {
-        // If there's no session or lastActivity, consider it invalid
-        res.json({ valid: false });
+        res.json(sessionStatus);
     }
 });
 

@@ -91,8 +91,24 @@ function sendClickCountReachedEmail(link) {
     });
 }
 
+function checkSession(req) {
+    if (req.session && req.session.lastActivity) {
+        const currentTime = Date.now();
+        const timeSinceLastActivity = currentTime - req.session.lastActivity;
+
+        if (timeSinceLastActivity > parseInt(process.env.SESSION_TIMEOUT) * 60 * 1000) {
+            return { valid: false, destroy: true };
+        } else {
+            req.session.lastActivity = currentTime;
+            return { valid: true };
+        }
+    }
+    return { valid: false };
+}
+
 module.exports = {
     isValidUrl,
+    checkSession,
     checkUrlExists,
     checkPassword,
     sendConfirmationEmail,
