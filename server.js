@@ -501,7 +501,7 @@ app.post('/updateNotifyUser', async (req, res) => {
     try {
         const url = await Url.findOneAndUpdate(
             { shortUrl: short },
-            { notifyUser: notifyUser, notifyHoursBefore: notifyHoursBefore },
+            { notifyUser: notifyUser, expirationNotificationHours: notifyHoursBefore },
             { new: true }       // Return the updated document
         );
 
@@ -511,7 +511,10 @@ app.post('/updateNotifyUser', async (req, res) => {
         }
 
         console.log('Notify user updated successfully for:', short);
-        res.json({ success: true });
+        const message = notifyUser
+            ? `Okay! We will notify you ${notifyHoursBefore} hours before your url expires.`
+            : "Alright, no notifications — your inbox is safe from us!";
+        res.json({ success: true, message });
     } catch (error) {
         console.error('Error updating notify user:', error);
         res.json({ success: false, message: 'Failed to update notify user' });
@@ -615,6 +618,11 @@ app.get('/:shortUrl', async (req, res) => {
 
     if (result.clicks % result.clickCountToSendEmail === 0) {
         sendClickCountReachedEmail(result);
+    }
+
+    if (result.clicks > result.redirectionLimit) {
+        console.log('Redirection limit reached for:', req.params.shortUrl);
+        return res.render('limitReached', { shortUrl: process.env.SERVER + req.params.shortUrl });
     }
 
     console.log('Redirecting:', req.params.shortUrl, 'to', result.fullUrl);

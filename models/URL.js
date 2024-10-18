@@ -33,6 +33,24 @@ const urlSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
         required: true
+    },
+    notifyUser: {
+        type: Boolean,
+        default: false
+    },
+    expirationNotificationHours: {
+        type: Number,
+        default: 24
+    },
+    password: {
+        type: String
+    },
+    redirectionLimit: {
+        type: Number,
+        default: 1
+    },
+    customMessage: {
+        type: String
     }
 });
 
