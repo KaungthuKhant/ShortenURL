@@ -138,117 +138,128 @@
     </div>
 
     <script>
-        document.addEventListener('visibilitychange', function() {
-            if (!document.hidden) {
-                fetch('/check-session')
-                    .then(response => response.json())
-                    .then(data => {
-                        if (!data.valid) {
-                            window.location.href = '/login?timeout=true';
-                        }
-                    })
-                    .catch(err => console.error('Error checking session:', err));
-            }
-        });
-
-        let notifyTimeout;
-        const notifyToggle = document.getElementById('notifyToggle');
-        const notifyHours = document.getElementById('notifyHours');
-        const notifyMessage = document.getElementById('notifyMessage');
-
-        function debounce(func, wait) {
-            let timeout;
-            return function executedFunction(...args) {
-                const later = () => {
-                    clearTimeout(timeout);
-                    func(...args);
-                };
-                clearTimeout(timeout);
-                timeout = setTimeout(later, wait);
-            };
-        }
-
-        const updateNotifyUser = debounce(() => {
-            const shortUrl = document.getElementById('shortUrlLink').href;
-            fetch('/updateNotifyUser', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    shortUrl: shortUrl,
-                    notifyUser: notifyToggle.checked,
-                    notifyHoursBefore: parseInt(notifyHours.value)
-                }),
-            })
-            .then(response => response.json())
-            .then(data => {
-                notifyMessage.textContent = data.success ? data.message : 'An error occurred. Please try again.';
-                notifyMessage.classList.remove('hidden');
-                clearTimeout(notifyTimeout);
-                notifyTimeout = setTimeout(() => {
-                    notifyMessage.classList.add('hidden');
-                }, 3000);
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                notifyMessage.textContent = 'An error occurred. Please try again.';
-                notifyMessage.classList.remove('hidden');
-                clearTimeout(notifyTimeout);
-                notifyTimeout = setTimeout(() => {
-                    notifyMessage.classList.add('hidden');
-                }, 2000);
-            });
-        }, 1000);
-
-        notifyToggle.addEventListener('change', updateNotifyUser);
-        notifyHours.addEventListener('change', updateNotifyUser);
-
-
-
-        // Handle Redirection Limit update
-        const redirectionLimitInput = document.getElementById('redirectionLimitInput');
-        const redirectionLimitMessage = document.getElementById('redirectionLimitMessage');
-
-        const updateRedirectionLimit = debounce(() => {
-            const shortUrl = document.getElementById('shortUrlLink').href;
-            const newRedirectionLimit = redirectionLimitInput.value;
-
-            fetch('/updateRedirectionLimit', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    shortUrl: shortUrl,
-                    newRedirectionLimit: newRedirectionLimit
-                }),
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    redirectionLimitMessage.textContent = 'Redirection limit updated successfully.';
-                } else {
-                    redirectionLimitMessage.textContent = 'Failed to update redirection limit. Please try again.';
-                }
-                redirectionLimitMessage.classList.remove('hidden');
-                setTimeout(() => {
-                    redirectionLimitMessage.classList.add('hidden');
-                }, 3000);
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                redirectionLimitMessage.textContent = 'An error occurred. Please try again.';
-                redirectionLimitMessage.classList.remove('hidden');
-                setTimeout(() => {
-                    redirectionLimitMessage.classList.add('hidden');
-                }, 3000);
-            });
-        }, 1000);
-
-        redirectionLimitInput.addEventListener('change', updateRedirectionLimit);
 
         document.addEventListener('DOMContentLoaded', function() {
+            document.addEventListener('visibilitychange', function() {
+                if (!document.hidden) {
+                    fetch('/check-session')
+                        .then(response => response.json())
+                        .then(data => {
+                            if (!data.valid) {
+                                window.location.href = '/login?timeout=true';
+                            }
+                        })
+                        .catch(err => console.error('Error checking session:', err));
+                }
+            });
+
+            let notifyTimeout;
+            const notifyToggle = document.getElementById('notifyToggle');
+            const notifyHours = document.getElementById('notifyHours');
+            const notifyMessage = document.getElementById('notifyMessage');
+
+            function debounce(func, wait) {
+                let timeout;
+                return function executedFunction(...args) {
+                    const later = () => {
+                        clearTimeout(timeout);
+                        func(...args);
+                    };
+                    clearTimeout(timeout);
+                    timeout = setTimeout(later, wait);
+                };
+            }
+
+            const updateNotifyUser = debounce(() => {
+                const shortUrl = document.getElementById('shortUrlLink').href;
+                fetch('/updateNotifyUser', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        shortUrl: shortUrl,
+                        notifyUser: notifyToggle.checked,
+                        notifyHoursBefore: parseInt(notifyHours.value)
+                    }),
+                })
+                .then(response => response.json())
+                .then(data => {
+                    notifyMessage.textContent = data.success ? data.message : 'An error occurred. Please try again.';
+                    notifyMessage.classList.remove('hidden');
+                    clearTimeout(notifyTimeout);
+                    notifyTimeout = setTimeout(() => {
+                        notifyMessage.classList.add('hidden');
+                    }, 3000);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    notifyMessage.textContent = 'An error occurred. Please try again.';
+                    notifyMessage.classList.remove('hidden');
+                    clearTimeout(notifyTimeout);
+                    notifyTimeout = setTimeout(() => {
+                        notifyMessage.classList.add('hidden');
+                    }, 2000);
+                });
+            }, 1000);
+
+            
+
+            //handle the toggle change
+            const toggleSwitch = notifyToggle.nextElementSibling;
+            notifyToggle.addEventListener('change', function() {
+                updateNotifyUser();
+                
+                const toggleSwitch = this.nextElementSibling;
+                if (this.checked) {
+                    toggleSwitch.classList.replace('bg-gray-600', 'bg-green-500');
+                } else {
+                    toggleSwitch.classList.replace('bg-green-500', 'bg-gray-600');
+                }
+            });
+            notifyHours.addEventListener('change', updateNotifyUser);
+
+            // Handle Redirection Limit update
+            const redirectionLimitInput = document.getElementById('redirectionLimitInput');
+            const redirectionLimitMessage = document.getElementById('redirectionLimitMessage');
+
+            const updateRedirectionLimit = debounce(() => {
+                const shortUrl = document.getElementById('shortUrlLink').href;
+                const newRedirectionLimit = redirectionLimitInput.value;
+
+                fetch('/updateRedirectionLimit', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        shortUrl: shortUrl,
+                        newRedirectionLimit: newRedirectionLimit
+                    }),
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        redirectionLimitMessage.textContent = 'Redirection limit updated successfully.';
+                    } else {
+                        redirectionLimitMessage.textContent = 'Failed to update redirection limit. Please try again.';
+                    }
+                    redirectionLimitMessage.classList.remove('hidden');
+                    setTimeout(() => {
+                        redirectionLimitMessage.classList.add('hidden');
+                    }, 3000);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    redirectionLimitMessage.textContent = 'An error occurred. Please try again.';
+                    redirectionLimitMessage.classList.remove('hidden');
+                    setTimeout(() => {
+                        redirectionLimitMessage.classList.add('hidden');
+                    }, 3000);
+                });
+            }, 1000);
+
+            redirectionLimitInput.addEventListener('change', updateRedirectionLimit);
 
             // Password management
             const passwordInput = document.getElementById('urlPasswordInput');
@@ -323,19 +334,7 @@
             cancelBtn.addEventListener('click', cancelEditing);
             saveBtn.addEventListener('click', savePassword);
             
-            //handle the toggle
-            const notifyToggle = document.getElementById('notifyToggle');
-            const toggleSwitch = notifyToggle.nextElementSibling;
-
-            notifyToggle.addEventListener('change', function() {
-                if (this.checked) {
-                    toggleSwitch.classList.remove('bg-gray-600');
-                    toggleSwitch.classList.add('bg-green-500');
-                } else {
-                    toggleSwitch.classList.remove('bg-green-500');
-                    toggleSwitch.classList.add('bg-gray-600');
-                }
-            });
+            
 
 
             // Handle Copy URL functionality
