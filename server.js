@@ -202,7 +202,12 @@ app.post('/url-details', async (req, res) => {
             shortUrl: fullShortUrl,
             clicks: url.clicks,
             qrCode,
-            expirationDate: url.urlExpirationDate
+            expirationDate: url.urlExpirationDate,
+            notifyUser: url.notifyUser,
+            notifyHoursBefore: url.expirationNotificationHours,
+            redirectionLimit: url.redirectionLimit,
+            customMessage: url.customMessage,
+            password: url.password
         });
     } catch (error) {
         console.error('Error generating QR code:', error);
@@ -551,6 +556,84 @@ app.post('/updateExpirationDate', async (req, res) => {
     }
 });
 
+// Route: Update redirection limit
+app.post('/updateRedirectionLimit', async (req, res) => {
+    console.log('Received update redirection limit request:', req.body);
+    const { shortUrl, newRedirectionLimit } = req.body;
+    const short = shortUrl.replace(process.env.SERVER, "");
+
+    try {
+        const url = await Url.findOneAndUpdate(
+            { shortUrl: short },
+            { redirectionLimit: newRedirectionLimit },
+            { new: true }
+        );
+
+        if (!url) {
+            console.log('URL not found when updating redirection limit:', short);
+            return res.json({ success: false, message: 'URL not found' });
+        }
+
+        console.log('Redirection limit updated successfully for:', short);
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error updating redirection limit:', error);
+        res.json({ success: false, message: 'Failed to update redirection limit' });
+    }
+});
+
+// Route: Update URL password
+app.post('/updateUrlPassword', async (req, res) => {
+    console.log('Received update URL password request:', req.body);
+    const { shortUrl, newPassword } = req.body;
+    const short = shortUrl.replace(process.env.SERVER, "");
+
+    try {
+        const url = await Url.findOneAndUpdate(
+            { shortUrl: short },
+            { password: newPassword },
+            { new: true }
+        );
+
+        if (!url) {
+            console.log('URL not found when updating password:', short);
+            return res.json({ success: false, message: 'URL not found' });
+        }
+
+        console.log('Password updated successfully for:', short);
+        res.json({ success: true, message: "Password updated successfully." });
+    } catch (error) {
+        console.error('Error updating URL password:', error);
+        res.json({ success: false, message: 'Failed to update URL password' });
+    }
+});
+
+// Route: Update custom message
+app.post('/updateCustomMessage', async (req, res) => {
+    console.log('Received update custom message request:', req.body);
+    const { shortUrl, newCustomMessage } = req.body;
+    const short = shortUrl.replace(process.env.SERVER, "");
+
+    try {
+        const url = await Url.findOneAndUpdate(
+            { shortUrl: short },
+            { customMessage: newCustomMessage },
+            { new: true }
+        );
+
+        if (!url) {
+            console.log('URL not found when updating custom message:', short);
+            return res.json({ success: false, message: 'URL not found' });
+        }
+
+        console.log('Custom message updated successfully for:', short);
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error updating custom message:', error);
+        res.json({ success: false, message: 'Failed to update custom message' });
+    }
+});
+
 
 
 
@@ -590,42 +673,95 @@ const transporter = nodemailer.createTransport({
 
 // Route: Redirect short URL to full URL
 app.get('/:shortUrl', async (req, res) => {
-    /* the following line is to prevent the browser from prefetching the url
-     * When the user paste a link in the browser, the browser will prefetch the url
-     * this cause this route to be called and increase the click by one
-     * when the user actually click enter and go to the shortUrl, this route gets call agian
-     * increasing the click one more time so when the user go to the shortUrl by pasting
-     * the amount of click is increase by 2, to prevent that, we need to stop browser from prefatching the url
+    console.log('Route /:shortUrl for ', req.params.shortUrl);
+    /* The following lines prevent the browser from prefetching the URL.
+     * When the user pastes a link in the browser, the browser might prefetch the URL,
+     * causing this route to be called and increasing the click count by one.
+     * When the user actually clicks enter and goes to the shortUrl, this route gets called again,
+     * increasing the click count one more time. So when the user goes to the shortUrl by pasting,
+     * the click count is increased by 2. To prevent that, we need to stop the browser from prefetching the URL.
      * 
-     * it is a hack, but it works       
+     * It's a hack, but it works.
      */
     const purpose = req.get('Purpose') || req.get('X-Purpose');
   
     if (purpose === 'prefetch' || purpose === 'preview') {
         return res.status(204).end();
     }
-    
+
+    // Find the URL document
+    const url = await Url.findOne({ shortUrl: req.params.shortUrl });
+
+    if (!url) {
+        console.log('Short URL not found:', req.params.shortUrl);
+        return res.sendStatus(404);
+    }
+
+    // Check if the URL is password protected
+    if (url.password) {
+        console.log('Password protected URL:', req.params.shortUrl);
+        return res.render('urlPassword.ejs', { shortUrl: req.params.shortUrl, message: "Please enter the password to access this URL." });
+    }
+
+    // If not password protected, proceed with redirection
     const result = await Url.findOneAndUpdate(
         { shortUrl: req.params.shortUrl },
         { $inc: { clicks: 1 } },
         { new: true }
     );
 
-    if (!result) {
-        console.log('Short URL not found:', req.params.shortUrl);
-        return res.sendStatus(404);
-    }
-
+    // Check if we need to send a notification email
     if (result.clicks % result.clickCountToSendEmail === 0) {
         sendClickCountReachedEmail(result);
     }
 
+    // Check if the redirection limit has been reached
     if (result.clicks > result.redirectionLimit) {
         console.log('Redirection limit reached for:', req.params.shortUrl);
         return res.render('limitReached', { shortUrl: process.env.SERVER + req.params.shortUrl });
     }
 
+    // All checks passed, redirect to the full URL
     console.log('Redirecting:', req.params.shortUrl, 'to', result.fullUrl);
+    res.redirect(result.fullUrl);
+});
+
+app.post('/:shortUrl/verify', async (req, res) => {
+    console.log('Received verify password request:', req.body);
+    const { password } = req.body;
+    const { shortUrl } = req.params;
+
+    const url = await Url.findOne({ shortUrl });
+
+    if (!url) {
+        return res.status(404).render('error', { message: 'URL not found' });
+    }
+
+    if (url.password !== password) {
+        return res.render('urlPassword', { 
+            shortUrl: shortUrl, 
+            message: 'Incorrect password. Please try again.' 
+        });
+    }
+
+    // Password is correct, update click count
+    const result = await Url.findOneAndUpdate(
+        { shortUrl },
+        { $inc: { clicks: 1 } },
+        { new: true }
+    );
+
+    if (result.clicks % result.clickCountToSendEmail === 0) {
+        sendClickCountReachedEmail(result);
+    }
+
+    // Check if the redirection limit has been reached
+    if (result.clicks > result.redirectionLimit) {
+        console.log('Redirection limit reached for:', req.params.shortUrl);
+        return res.render('limitReached', { shortUrl: process.env.SERVER + req.params.shortUrl });
+    }
+
+    // If everything is okay, redirect to the full URL
     res.redirect(result.fullUrl);
 });
 

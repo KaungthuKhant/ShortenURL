@@ -43,7 +43,8 @@ const urlSchema = new mongoose.Schema({
         default: 24
     },
     password: {
-        type: String
+        type: String,
+        default: "test"
     },
     redirectionLimit: {
         type: Number,
@@ -51,8 +52,8 @@ const urlSchema = new mongoose.Schema({
     },
     customMessage: {
         type: String
-    }
-});
+    }             
+});             
 
 urlSchema.pre('save', function (next) {
     this.updatedAt = Date.now();
