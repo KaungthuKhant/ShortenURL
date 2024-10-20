@@ -15,6 +15,7 @@ const nodemailer = require('nodemailer');
 const crypto = require('crypto');
 const QRCode = require('qrcode');
 const mongoose = require("mongoose");
+const rateLimit = require('express-rate-limit');
 
 // Import local modules and configurations
 const User = require("./models/User");
@@ -65,6 +66,14 @@ app.use((req, res, next) => {
     res.setHeader('Cache-Control', 'no-store');
     next();
 });
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100 // limit each IP to 100 requests per windowMs
+});
+
+// Apply to all requests
+app.use(limiter);
 
 /**
  * Function to save a new user
