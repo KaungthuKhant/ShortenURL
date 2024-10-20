@@ -637,7 +637,6 @@ app.post('/updateCustomMessage', async (req, res) => {
 
 
 
-// ===========================================================================================================================================================
 // Route: Check session validity
 app.get('/check-session', (req, res) => {
     console.log('Checking session validity');
@@ -673,7 +672,6 @@ const transporter = nodemailer.createTransport({
 
 // Route: Redirect short URL to full URL
 app.get('/:shortUrl', async (req, res) => {
-    console.log('Route /:shortUrl for ', req.params.shortUrl);
     /* The following lines prevent the browser from prefetching the URL.
      * When the user pastes a link in the browser, the browser might prefetch the URL,
      * causing this route to be called and increasing the click count by one.
@@ -722,12 +720,10 @@ app.get('/:shortUrl', async (req, res) => {
     }
 
     // All checks passed, redirect to the full URL
-    console.log('Redirecting:', req.params.shortUrl, 'to', result.fullUrl);
     res.redirect(result.fullUrl);
 });
 
 app.post('/:shortUrl/verify', async (req, res) => {
-    console.log('Received verify password request:', req.body);
     const { password } = req.body;
     const { shortUrl } = req.params;
 
