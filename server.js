@@ -154,7 +154,8 @@ app.get('/', checkAuthenticated, async (req, res) => {
         fullUrl: req.query.fullUrl || '',
         shortUrl: req.query.shortUrl || '',
         clickCountsToNotify: req.query.clickCountsToNotify || '',
-        expirationDate: req.query.expirationDate || ''
+        expirationDate: req.query.expirationDate || '',
+        errorComponent: req.query.errorComponent || ''
     });
 });
 
@@ -392,55 +393,73 @@ app.get('/auth/google/callback',
 // Route: Create short URL
 
 app.post('/shortUrls', async (req, res) => {
-    let fullUrl = req.body.fullUrl;
-    let short = req.body.shortUrl;
-    let clickCountsToNotify = req.body.clickCountsToNotify;
-    let expirationDate = req.body.expirationDate ? new Date(req.body.expirationDate) : null;
-    let userEmail = req.body.userEmail;
+    let { fullUrl, shortUrl, clickCountsToNotify, expirationDate, userEmail } = req.body;
+    
+    // Add https:// if it's missing
+    if (!/^https?:\/\//i.test(fullUrl)) {
+        fullUrl = 'https://' + fullUrl.replace(/^(www\.)?/, 'www.');
+    }
+
+    // Reserved routes
+    const reservedRoutes = [
+        'shortUrls', 'delete-url', 'updateFullURL', 'updateShortUrl', 'updateNotifyUser',
+        'updateExpirationDate', 'updateRedirectionLimit', 'updateUrlPassword',
+        'updateCustomMessage', 'check-session', 'logout', 'forgot-password',
+        'reset-password', 'auth'
+    ];
+    if (reservedRoutes.includes(shortUrl)) {
+        return res.status(400).json({
+            error: 'This short URL is reserved. Please choose a different one.',
+            errorComponent: 'short_url'
+        });
+    }
 
     // Validate URL format
     if (!isValidUrl(fullUrl)) {
-        return res.redirect('/?error=' + encodeURIComponent('Invalid URL format') +
-        '&fullUrl=' + encodeURIComponent(fullUrl) +
-        '&shortUrl=' + encodeURIComponent(short) +
-        '&clickCountsToNotify=' + encodeURIComponent(clickCountsToNotify) +
-        '&expirationDate=' + encodeURIComponent(req.body.expirationDate));
+        return res.status(400).json({
+            error: 'Invalid URL format',
+            errorComponent: 'full_url'
+        });
     }
 
     try {
         // Check if the URL exists by performing a DNS lookup
         const urlExists = await checkUrlExists(fullUrl);
         if (!urlExists) {
-            return res.redirect('/?error=' + encodeURIComponent('The provided URL does not exist or is not accessible') +
-            '&fullUrl=' + encodeURIComponent(fullUrl) +
-            '&shortUrl=' + encodeURIComponent(short) +
-            '&clickCountsToNotify=' + encodeURIComponent(clickCountsToNotify) +
-            '&expirationDate=' + encodeURIComponent(req.body.expirationDate));
+            return res.status(400).json({
+                error: 'The provided URL does not exist or is not accessible',
+                errorComponent: 'full_url'
+            });
         }
 
         // Get the user id from the email
         const user = await User.findOne({ email: userEmail });
         if (!user) {
-            return res.redirect('/?error=' + encodeURIComponent('User not found'));
+            return res.status(400).json({
+                error: 'User not found',
+                errorComponent: 'user'
+            });
         }
         const userId = user._id;
 
-        const link = await saveLink(fullUrl, short, userId, expirationDate, clickCountsToNotify);
+        expirationDate = expirationDate ? new Date(expirationDate) : null;
+        const link = await saveLink(fullUrl, shortUrl, userId, expirationDate, clickCountsToNotify);
         if (!link) {
-            return res.redirect('/?error=' + encodeURIComponent('Short URL already in use') +
-            '&fullUrl=' + encodeURIComponent(fullUrl) +
-            '&shortUrl=' + encodeURIComponent(short) +
-            '&clickCountsToNotify=' + encodeURIComponent(clickCountsToNotify) +
-            '&expirationDate=' + encodeURIComponent(req.body.expirationDate));
+            return res.status(400).json({
+                error: 'Short URL already in use',
+                errorComponent: 'short_url'
+            });
         }
-        res.redirect('/');
+
+        // Fetch all URLs for this user to send back
+        const urls = await Url.find({ userId: userId });
+        res.json({ success: true, urls: urls });
     } catch (error) {
         console.error('Error creating short URL:', error);
-        res.redirect('/?error=' + encodeURIComponent('An error occurred while creating the short URL') +
-        '&fullUrl=' + encodeURIComponent(fullUrl) +
-        '&shortUrl=' + encodeURIComponent(short) +
-        '&clickCountsToNotify=' + encodeURIComponent(clickCountsToNotify) +
-        '&expirationDate=' + encodeURIComponent(req.body.expirationDate));
+        res.status(500).json({
+            error: 'An error occurred while creating the short URL',
+            errorComponent: 'server'
+        });
     }
 });
 
