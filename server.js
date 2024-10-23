@@ -636,7 +636,7 @@ app.post('/updateCustomMessage', async (req, res) => {
         }
 
         console.log('Custom message updated successfully for:', short);
-        res.json({ success: true });
+        res.json({ success: true, message: "Custom message updated successfully." });
     } catch (error) {
         console.error('Error updating custom message:', error);
         res.json({ success: false, message: 'Failed to update custom message' });
@@ -707,7 +707,7 @@ app.get('/:shortUrl', async (req, res) => {
     // Check if the URL is password protected
     if (url.password) {
         console.log('Password protected URL:', req.params.shortUrl);
-        return res.render('urlPassword.ejs', { shortUrl: req.params.shortUrl, message: "Please enter the password to access this URL." });
+        return res.render('urlPassword.ejs', { shortUrl: req.params.shortUrl, message: "Please enter the password to access this URL.", customMessage: url.customMessage });
     }
 
     // If not password protected, proceed with redirection
@@ -745,7 +745,8 @@ app.post('/:shortUrl/verify', async (req, res) => {
     if (url.password !== password) {
         return res.render('urlPassword', { 
             shortUrl: shortUrl, 
-            message: 'Incorrect password. Please try again.' 
+            message: 'Incorrect password. Please try again.',
+            customMessage: url.customMessage
         });
     }
 

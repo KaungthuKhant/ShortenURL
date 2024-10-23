@@ -44,11 +44,10 @@ const urlSchema = new mongoose.Schema({
     },
     password: {
         type: String,
-        default: "test"
     },
     redirectionLimit: {
         type: Number,
-        default: 1
+        default: 1000
     },
     customMessage: {
         type: String
