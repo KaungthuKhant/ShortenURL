@@ -14,10 +14,10 @@
 
     <form id="shortenForm">
         <div class="form-row">
-            <input required placeholder="Enter URL to shorten" type="text" name="fullUrl" id="fullUrl" class="url-input" value="<%= fullUrl || '' %>">
-            <input type="text" placeholder="Custom Short URL" name="shortUrl" id="shortUrl" value="<%= shortUrl || '' %>">
-            <input type="number" placeholder="Notify at Clicks" name="clickCountsToNotify" id="clickCountsToNotify" value="<%= clickCountsToNotify || '' %>">
-            <input type="date" placeholder="Expiration Date (optional)" name="expirationDate" id="expirationDate" onkeydown="return false" value="<%= expirationDate || '' %>">
+            <input required placeholder="Enter URL to shorten" type="text" name="fullUrl" id="fullUrl" class="url-input">
+            <input type="text" placeholder="Custom Short URL" name="shortUrl" id="shortUrl">
+            <input type="number" placeholder="Notify at Clicks" name="clickCountsToNotify" id="clickCountsToNotify">
+            <input type="date" placeholder="Expiration Date (optional)" name="expirationDate" id="expirationDate" onkeydown="return false">
             <input type="hidden" name="userEmail" id="userEmail" value="<%= email %>">
             <button type="submit">Shorten</button>
         </div>
@@ -78,22 +78,6 @@
             expirationDateInput.setAttribute('max', formatDate(maxDate));
 
             const errorMessageDiv = document.getElementById('errorMessage');
-            const urlError = "<%= error %>";
-            const errorComponent = "<%= errorComponent %>";
-
-            if (urlError) {
-                const urlInput = document.getElementById(errorComponent === "short_url" ? 'shortUrl' : 'fullUrl');
-                urlInput.style.borderColor = '#e65757';
-                urlInput.style.boxShadow = '0 0 5px rgba(230, 87, 87, 0.5)';
-                errorMessageDiv.textContent = decodeURIComponent(urlError);
-                errorMessageDiv.style.display = 'block';
-
-                urlInput.addEventListener('input', function() {
-                    this.style.borderColor = '';
-                    this.style.boxShadow = '';
-                    errorMessageDiv.style.display = 'none';
-                });
-            }
 
             applyCopyFunctionality();
             applyDeleteFunctionality();

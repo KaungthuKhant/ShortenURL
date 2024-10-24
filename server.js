@@ -149,13 +149,7 @@ app.get('/', checkAuthenticated, async (req, res) => {
         req: req,
         name: req.user.name, 
         email: req.user.email, 
-        urls: links,
-        error: req.query.error || null,
-        fullUrl: req.query.fullUrl || '',
-        shortUrl: req.query.shortUrl || '',
-        clickCountsToNotify: req.query.clickCountsToNotify || '',
-        expirationDate: req.query.expirationDate || '',
-        errorComponent: req.query.errorComponent || ''
+        urls: links
     });
 });
 
@@ -404,8 +398,9 @@ app.post('/shortUrls', async (req, res) => {
     const reservedRoutes = [
         'shortUrls', 'delete-url', 'updateFullURL', 'updateShortUrl', 'updateNotifyUser',
         'updateExpirationDate', 'updateRedirectionLimit', 'updateUrlPassword',
-        'updateCustomMessage', 'check-session', 'logout', 'forgot-password',
-        'reset-password', 'auth'
+        'updateCustomMessage', 'check-session', 'logout', 'login', 'forgot-password',
+        'reset-password', 'auth', 'register', 'confirmation', 'home', 'auth/google', 'auth/google/callback',
+        'url-details', 'fetch-urls', 'check-session', 'confirm'
     ];
     if (reservedRoutes.includes(shortUrl)) {
         return res.status(400).json({
@@ -464,10 +459,19 @@ app.post('/shortUrls', async (req, res) => {
 });
 
 // Route: Delete URL
-app.post('/delete-url', async (req, res) => {
-    await Url.deleteOne({ shortUrl: req.body.shortUrl });
-    console.log('URL deleted:', req.body.shortUrl);
-    res.redirect('/');
+app.post('/delete-url', checkAuthenticated, async (req, res) => {
+    try {
+        await Url.deleteOne({ shortUrl: req.body.shortUrl });
+        console.log('URL deleted:', req.body.shortUrl);
+        
+        // Fetch updated URLs
+        const urls = await Url.find({ userId: req.user._id });
+        
+        res.json({ success: true, urls: urls });
+    } catch (error) {
+        console.error('Error deleting URL:', error);
+        res.status(500).json({ success: false, error: 'Failed to delete URL' });
+    }
 });
 
 // Route: Update full URL
@@ -974,3 +978,4 @@ async function sendExpirationReminders() {
 setInterval(sendExpirationReminders, 12 * 60 * 60 * 1000);   
 // Run the expired URL function every hour
 setInterval(checkForExpiredUrls, 60 * 60 * 1000);
+
