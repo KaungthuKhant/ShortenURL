@@ -213,6 +213,7 @@
                 button.addEventListener('click', function(e) {
                     e.preventDefault();
                     const shortUrl = this.getAttribute('data-short-url');
+                    console.log("Calling details for: ", shortUrl);
                     window.open(`/url-details?shortUrl=${shortUrl}`, '_blank');
                 });
             });

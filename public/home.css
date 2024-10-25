@@ -216,6 +216,12 @@ ul li:hover:before {
     display: none;
 }
 
+.logo{
+    width: 100px;
+    height: auto;
+    padding: 10px;
+}
+
 @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }

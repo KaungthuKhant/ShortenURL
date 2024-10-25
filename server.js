@@ -188,9 +188,10 @@ app.get('/fetch-urls', checkAuthenticated, async (req, res) => {
 });
 
 // Route: Generate QR code for a short URL
-app.post('/url-details', async (req, res) => {
+app.get('/url-details', checkAuthenticated, async (req, res) => {
+    console.log("url-details called for: ", req.query.shortUrl);
     try {
-        const { shortUrl } = req.body;
+        const { shortUrl } = req.query;
         const url = await Url.findOne({ shortUrl });
 
         if (!url) {
@@ -978,4 +979,5 @@ async function sendExpirationReminders() {
 setInterval(sendExpirationReminders, 12 * 60 * 60 * 1000);   
 // Run the expired URL function every hour
 setInterval(checkForExpiredUrls, 60 * 60 * 1000);
+
 

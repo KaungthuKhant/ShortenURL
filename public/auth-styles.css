@@ -7,8 +7,10 @@
     --error-color: #dc3545;
 }
 
+@import url('https://fonts.googleapis.com/css2?family=Ranade:wght@400;700&display=swap');
+
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: 'Ranade', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background: linear-gradient(135deg, var(--background-color), #e0e0e0);
     display: flex;
     justify-content: center;
@@ -26,10 +28,10 @@ body {
     width: 90%;
     max-width: 400px;
     transition: all 0.3s ease;
+    font-family: 'Rande';
 }
 
 .auth-container:hover {
-    transform: translateY(-5px);
     box-shadow: 0 6px 25px rgba(0, 0, 0, 0.15);
 }
 
@@ -142,6 +144,16 @@ p {
 .alert {
     padding-top: 0.75rem;
     padding-bottom: 0.75rem;
+}
+
+
+.logo {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    width: 100px;
+    height: auto;
+    padding: 10px;
 }
 
 
