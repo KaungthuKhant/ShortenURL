@@ -116,7 +116,7 @@ async function saveUser(name, email, password, googleId) {
  * @param {number} clickCountsToNotify - The number of clicks after which to notify the user
  * @returns {Promise<Url|null>} The saved Url document, or null if the short URL already exists
  */
-async function saveLink(fullLink, shortLink, userId, expirationDate, clickCountsToNotify) {
+async function saveLink(fullLink, shortLink, userId) {
     // Check if the short URL already exists
     const existingLink = await Url.findOne({ shortUrl: shortLink });
     if (existingLink) {
@@ -124,16 +124,15 @@ async function saveLink(fullLink, shortLink, userId, expirationDate, clickCounts
         return null;
     }
 
-    // Set expiration date to 7 days from now if not provided
-    const expiryDate = expirationDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    // Set expiration date to 7 days from now
+    const expiryDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
     // Create a new Url instance
     const link = new Url({
         fullUrl: fullLink,
         shortUrl: shortLink,
         userId: userId,
-        urlExpirationDate: expiryDate,
-        clickCountToSendEmail: Number(clickCountsToNotify),
+        urlExpirationDate: expiryDate
     });
 
     // Save the link to the database
@@ -388,7 +387,7 @@ app.get('/auth/google/callback',
 // Route: Create short URL
 
 app.post('/shortUrls', async (req, res) => {
-    let { fullUrl, shortUrl, clickCountsToNotify, expirationDate, userEmail } = req.body;
+    let { fullUrl, shortUrl, userEmail } = req.body;
     
     // Add https:// if it's missing
     if (!/^https?:\/\//i.test(fullUrl)) {
@@ -438,8 +437,7 @@ app.post('/shortUrls', async (req, res) => {
         }
         const userId = user._id;
 
-        expirationDate = expirationDate ? new Date(expirationDate) : null;
-        const link = await saveLink(fullUrl, shortUrl, userId, expirationDate, clickCountsToNotify);
+        const link = await saveLink(fullUrl, shortUrl, userId);
         if (!link) {
             return res.status(400).json({
                 error: 'Short URL already in use',

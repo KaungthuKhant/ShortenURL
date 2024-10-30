@@ -16,8 +16,6 @@
         <div class="form-row">
             <input required placeholder="Enter URL to shorten" type="text" name="fullUrl" id="fullUrl" class="url-input">
             <input type="text" placeholder="Custom Short URL" name="shortUrl" id="shortUrl">
-            <input type="number" placeholder="Notify at Clicks" name="clickCountsToNotify" id="clickCountsToNotify">
-            <input type="date" placeholder="Expiration Date (optional)" name="expirationDate" id="expirationDate" onkeydown="return false">
             <input type="hidden" name="userEmail" id="userEmail" value="<%= email %>">
             <button type="submit">Shorten</button>
         </div>
@@ -66,16 +64,10 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const expirationDateInput = document.getElementById('expirationDate');
-            const today = new Date();
-            const maxDate = new Date(today.getTime() + 14 * 24 * 60 * 60 * 1000);
             
             const formatDate = (date) => {
                 return date.toISOString().split('T')[0];
             };
-            
-            expirationDateInput.setAttribute('min', formatDate(today));
-            expirationDateInput.setAttribute('max', formatDate(maxDate));
 
             const errorMessageDiv = document.getElementById('errorMessage');
 
@@ -87,15 +79,11 @@
                 e.preventDefault();
                 const fullUrl = document.getElementById('fullUrl').value;
                 const shortUrl = document.getElementById('shortUrl').value;
-                const clickCountsToNotify = document.getElementById('clickCountsToNotify').value;
-                const expirationDate = document.getElementById('expirationDate').value;
                 const userEmail = document.getElementById('userEmail').value;
 
                 const data = {
                     fullUrl,
                     shortUrl,
-                    clickCountsToNotify,
-                    expirationDate,
                     userEmail
                 };
 

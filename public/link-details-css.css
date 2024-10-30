@@ -44,7 +44,6 @@ button:active {
 
 button:focus {
     outline: none;
-    box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.5);
 }
 
 /* General text styling */
@@ -66,12 +65,13 @@ img {
     max-width: 100%;
     height: auto;
     display: block;
-    transition: all 0.3s ease-in-out;
+    padding: 3px; /* Add padding to prevent border overlap */
 }
 
 img:hover {
-    transform: scale(1.05);
+    transform: scale(1.03);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    margin-left: 3px;
 }
 
 .toggle-switch {
@@ -113,4 +113,8 @@ html, body {
 .content-wrapper {
     max-height: calc(100vh - 2rem);
     overflow-y: auto;
+}
+
+input:checked + .toggle-switch {
+    background-color: #0EA5E9;
 }
