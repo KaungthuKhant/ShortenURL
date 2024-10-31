@@ -10,6 +10,9 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
 </head>
 <body class="bg-gradient-to-r from-gray-900 to-gray-800 min-h-screen flex items-center justify-center transition-all duration-300">
+    <a href="/">
+        <img src="/images/SnipItBG2.png" alt="SnipIt Logo" class="logo">
+    </a>
     <div id="urlDetailsContainer" class="container mx-auto p-4 bg-gray-800 bg-opacity-90 rounded-lg shadow-lg transition-all duration-300 animate-fade-in">
         <div class="content-wrapper">
             <h1 class="text-2xl font-bold mb-4 text-[#0EA5E9]">URL Details</h1>
@@ -17,7 +20,8 @@
                 <div class="bg-gray-700 p-2 rounded-md shadow-sm hover:shadow-md transition-shadow duration-300">
                     <p class="text-white mb-2">Full URL:</p>
                     <div>
-                        <a id="fullUrlLink" href="<%= fullUrl %>" target="_blank" class="text-blue-400 hover:text-blue-300 hover:underline transition-colors duration-300"><%= fullUrl %></a>
+                        <p id="fullURLUpdateMessage" class="text-red-400 mt-2 hidden"></p>
+                        <a id="fullUrlLink" href="<%= fullUrl %>" target="_blank" class="text-[#0EA5E9] hover:text-blue-300 hover:underline transition-colors duration-300"><%= fullUrl %></a>
                         <input id="fullUrlInput" type="text" value="<%= fullUrl %>" class="hidden border border-gray-600 rounded p-1 w-full mt-1 bg-gray-800 text-white">
                         <button id="editFullUrlBtn" class="ml-2 text-[#0EA5E9] hover:text-blue-300 transition-colors duration-300">
                             <i class="fas fa-pencil-alt"></i>
@@ -33,7 +37,8 @@
                 <div class="bg-gray-700 p-2 rounded-md shadow-sm hover:shadow-md transition-shadow duration-300">
                     <p class="text-white mb-2">Short URL:</p>
                     <div>
-                        <a id="shortUrlLink" href="<%= shortUrl %>" target="_blank" class="text-blue-400 hover:text-blue-300 hover:underline transition-colors duration-300"><%= shortUrl %></a>
+                        <p id="shortURLUpdateMessage" class="text-red-400 mt-2 hidden"></p>
+                        <a id="shortUrlLink" href="<%= shortUrl %>" target="_blank" class="text-[#0EA5E9] hover:text-blue-300 hover:underline transition-colors duration-300"><%= shortUrl %></a>
                         <input id="shortUrlInput" type="text" value="<%= shortUrl.split('/').pop() %>" class="hidden border border-gray-600 rounded p-1 w-full mt-1 bg-gray-800 text-white">
                         <input type="hidden" id="originalShortUrl" value="<%= shortUrl %>">
                         <button id="editShortUrlBtn" class="ml-2 text-[#0EA5E9] hover:text-blue-300 transition-colors duration-300">
@@ -130,7 +135,7 @@
                 <div class="bg-gray-700 p-2 rounded-md shadow-sm hover:shadow-md transition-shadow duration-300">
                     <p class="text-white mb-2">Clicks:</p>
                     <div>
-                        <span class="text-[#0EA5E9]"><%= clicks %></span>
+                        <span class="text-white"><%= clicks %></span>
                     </div>
                 </div>
 
@@ -544,6 +549,7 @@
                         document.getElementById('editShortUrlBtn').classList.remove('hidden');
                         document.getElementById('saveFullURLBtn').classList.add('hidden');
                         document.getElementById('cancelFullUrlBtn').classList.add('hidden');
+                        document.getElementById('fullURLUpdateMessage').classList.add('hidden');
 
                         // Update QR code
                         const qrImage = document.getElementById('qrImage');
@@ -554,6 +560,17 @@
                         // When the user navigates back to the main page, it will check for this flag
                         // and refresh the table data if the flag is set to 'true'
                         localStorage.setItem('urlUpdated', 'true');
+                    }
+                    else {
+                        console.log('Failed to update full URL. Message:', data.message);
+                        const message = document.getElementById('fullURLUpdateMessage');
+                        message.textContent = data.message;
+                        message.classList.remove('hidden'); 
+                        // Hide the error message after 3 seconds
+                        setTimeout(() => {
+                            const message = document.getElementById('fullURLUpdateMessage');
+                            message.classList.add('hidden');
+                        }, 3000);
                     }
                 }).catch(err => console.error('Error updating URLs:', err));
             });
@@ -581,12 +598,24 @@
                         document.getElementById('saveShortUrlBtn').classList.add('hidden');
                         document.getElementById('originalShortUrl').value = updatedShortUrl;
                         document.getElementById('cancelShortUrlBtn').classList.add('hidden');
+                        document.getElementById('shortURLUpdateMessage').classList.add('hidden');
 
                         // Set flag in local storage after successful update
                         // This flag is used to trigger an update of the URL table on the main page
                         // When the user navigates back to the main page, it will check for this flag
                         // and refresh the table data if the flag is set to 'true'
                         localStorage.setItem('urlUpdated', 'true');
+                    }
+                    else {
+                        const message = document.getElementById('shortURLUpdateMessage');
+                        message.textContent = data.message;
+                        message.classList.remove('hidden');
+
+                        // Hide the error message after 3 seconds
+                        setTimeout(() => {
+                            const message = document.getElementById('shortURLUpdateMessage');
+                            message.classList.add('hidden');
+                        }, 3000);
                     }
                 }).catch(err => console.error('Error updating short URL:', err));
             });

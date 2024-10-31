@@ -245,3 +245,12 @@ a:hover {
 .action-button:active {
     transform: translateY(0);
 }
+
+.logo {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    width: 100px;
+    height: auto;
+    padding: 10px;
+}

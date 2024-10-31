@@ -3,6 +3,7 @@ if (process.env.NODE_ENV !== 'production') {
     require('dotenv').config();
 }
 
+
 // Import required modules
 const express = require('express');
 const bcrypt = require('bcrypt');
@@ -38,6 +39,15 @@ initializePassport(
     id => User.findById(id),
     saveUser
 );
+
+// Reserved routes
+const reservedRoutes = [
+    'shortUrls', 'delete-url', 'updateFullURL', 'updateShortUrl', 'updateNotifyUser',
+    'updateExpirationDate', 'updateRedirectionLimit', 'updateUrlPassword',
+    'updateCustomMessage', 'check-session', 'logout', 'login', 'forgot-password',
+    'reset-password', 'auth', 'register', 'confirmation', 'home', 'auth/google', 'auth/google/callback',
+    'url-details', 'fetch-urls', 'check-session', 'confirm'
+];
 
 // Set up view engine and middleware
 app.set('view engine', 'ejs');
@@ -394,15 +404,9 @@ app.post('/shortUrls', async (req, res) => {
         fullUrl = 'https://' + fullUrl.replace(/^(www\.)?/, 'www.');
     }
 
-    // Reserved routes
-    const reservedRoutes = [
-        'shortUrls', 'delete-url', 'updateFullURL', 'updateShortUrl', 'updateNotifyUser',
-        'updateExpirationDate', 'updateRedirectionLimit', 'updateUrlPassword',
-        'updateCustomMessage', 'check-session', 'logout', 'login', 'forgot-password',
-        'reset-password', 'auth', 'register', 'confirmation', 'home', 'auth/google', 'auth/google/callback',
-        'url-details', 'fetch-urls', 'check-session', 'confirm'
-    ];
+    // Check if the short URL is reserved
     if (reservedRoutes.includes(shortUrl)) {
+        console.log('Short URL is reserved:', shortUrl);
         return res.status(400).json({
             error: 'This short URL is reserved. Please choose a different one.',
             errorComponent: 'short_url'
@@ -477,7 +481,24 @@ app.post('/delete-url', checkAuthenticated, async (req, res) => {
 app.post('/updateFullURL', async (req, res) => {
     const { fullUrl, shortUrl } = req.body;
     const short = shortUrl.replace(process.env.SERVER, "");
+
+    // Add https:// if it's missing
+    if (!/^https?:\/\//i.test(fullUrl)) {
+        fullUrl = 'https://' + fullUrl.replace(/^(www\.)?/, 'www.');
+    }
+    // Validate URL format
+    if (!isValidUrl(fullUrl)) {
+        return res.json({ success: false, message: 'Invalid URL Format' });
+    }
+
     try {
+        // Check if the URL exists by performing a DNS lookup
+        const urlExists = await checkUrlExists(fullUrl);
+        if (!urlExists) {
+            console.log('URL does not exist:', fullUrl);
+            return res.json({ success: false, message: 'URL does not exist' });
+        }
+
         const url = await Url.findOneAndUpdate(
             { shortUrl: short },
             { fullUrl: fullUrl },
@@ -486,13 +507,13 @@ app.post('/updateFullURL', async (req, res) => {
         
         if (!url) {
             console.log('URL not found when searching using shortUrl:', short);
-            return res.json({ success: false, message: 'URL not found' });
+            return res.json({ success: false, message: 'Error updating full URL. Please try again later.' });
         }
         
         const qrCode = await QRCode.toDataURL(url.fullUrl);
         
         console.log('Full URL updated successfully:', short);
-        res.json({ success: true, qrCode: qrCode });
+        return res.json({ success: true, message: 'Full URL updated successfully.', qrCode: qrCode });
     } catch (error) {
         console.error('Error updating full URL:', error);
         res.json({ success: false, message: 'Failed to update URL' });
@@ -506,6 +527,13 @@ app.post('/updateShortUrl', async (req, res) => {
     const short = shortUrl.replace(process.env.SERVER, "");
     const original = originalShortUrl.replace(process.env.SERVER, "");
     try {
+        console.log(reservedRoutes);
+
+        // Check if the short URL is reserved
+        if (reservedRoutes.includes(short)) {
+            return res.json({ success: false, message: 'This short URL is reserved. Please choose a different one.' });
+        }
+
         const existingUrl = await Url.findOne({ shortUrl: short });
         if (existingUrl) {
             return res.json({ success: false, message: 'Short URL already exists' });
@@ -521,10 +549,10 @@ app.post('/updateShortUrl', async (req, res) => {
             return res.json({ success: false, message: 'URL not found' });
         }
         console.log('Short URL updated successfully:', original, 'to', short);
-        res.json({ success: true });
+        return res.json({ success: true });
     } catch (error) {
         console.error('Error updating short URL:', error);
-        res.json({ success: false, message: 'Failed to update URL' });
+        return res.json({ success: false, message: 'Failed to update URL' });
     }
 });
 

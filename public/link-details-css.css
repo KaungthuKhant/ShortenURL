@@ -115,6 +115,21 @@ html, body {
     overflow-y: auto;
 }
 
+.logo {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    width: 100px;
+    height: auto;
+    padding: 10px;
+}
+
+.logo:hover {
+    box-shadow: none;
+    transform: none;
+    margin-left: 0;
+}
+
 input:checked + .toggle-switch {
     background-color: #0EA5E9;
 }
