@@ -398,14 +398,22 @@ app.get('/auth/google/callback',
 
 app.post('/shortUrls', async (req, res) => {
     let { fullUrl, shortUrl, userEmail } = req.body;
-    
+
+
+    if (shortUrl == "") {
+        shortUrl = crypto.randomBytes(3).toString('hex');
+        while (await Url.findOne({ shortUrl: shortUrl })) {
+            shortUrl = crypto.randomBytes(3).toString('hex');
+        }
+    }
+
     // Add https:// if it's missing
     if (!/^https?:\/\//i.test(fullUrl)) {
         fullUrl = 'https://' + fullUrl.replace(/^(www\.)?/, 'www.');
     }
 
     // Check if the short URL is reserved
-    if (reservedRoutes.includes(shortUrl)) {
+    if (shortUrl && reservedRoutes.includes(shortUrl)) {
         console.log('Short URL is reserved:', shortUrl);
         return res.status(400).json({
             error: 'This short URL is reserved. Please choose a different one.',
@@ -462,7 +470,7 @@ app.post('/shortUrls', async (req, res) => {
 });
 
 // Route: Delete URL
-app.post('/delete-url', checkAuthenticated, async (req, res) => {
+app.delete('/delete-url', checkAuthenticated, async (req, res) => {
     try {
         await Url.deleteOne({ shortUrl: req.body.shortUrl });
         console.log('URL deleted:', req.body.shortUrl);
@@ -690,6 +698,66 @@ app.post('/updateCustomMessage', async (req, res) => {
     } catch (error) {
         console.error('Error updating custom message:', error);
         res.json({ success: false, message: 'Failed to update custom message' });
+    }
+});
+
+// Route: Update username page
+app.get('/update-username', checkAuthenticated, (req, res) => {
+    res.render('update-username.ejs', { 
+        email: req.user.email,
+        message: null 
+    });
+});
+
+// Route: Update username
+app.post('/update-username', checkAuthenticated, async (req, res) => {
+    const { email, newUsername, password } = req.body;
+
+    try {
+        // Validate inputs
+        if (!email || !newUsername || !password) {
+            return res.json({ 
+                success: false, 
+                message: 'Email and new username are required' 
+            });
+        }
+
+        // Check if the password is correct
+        const checkUser = await User.findOne({ email: email });
+        if (!checkUser) {
+            return res.json({ success: false, message: 'User not found' });
+        }
+        if (!await bcrypt.compare(password, checkUser.password)) {
+            return res.json({ success: false, message: 'Incorrect password' });
+        }
+
+        // Find and update the user
+        const user = await User.findOneAndUpdate(
+            { email: email },
+            { name: newUsername },
+            { new: true }
+        );
+
+        if (!user) {
+            console.log('User not found for email:', email);
+            return res.json({ 
+                success: false, 
+                message: 'User not found' 
+            });
+        }
+
+        console.log('Username updated successfully for:', email);
+        return res.json({ 
+            success: true, 
+            message: 'Username updated successfully' 
+        });
+
+    } catch (error) {
+        console.error('Error updating username:', error);
+        return res.json({ 
+            success: false, 
+            message: 'Error updating the username' 
+        });
     }
 });
 

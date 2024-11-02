@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Update Username</title>
+    <link rel="stylesheet" href="/auth-styles.css">
+</head>
+<body>
+    <a href="/">
+        <img src="/images/SnipItBG2.png" alt="SnipIt Logo" class="logo">
+    </a>
+    <div class="auth-container">
+        <h1>Update Username</h1>
+
+        <% if (messages.error) { %>
+            <p class="error"><%= messages.error %></p>
+        <% } %>
+        
+        
+        <div>
+            <input type="hidden" id="email" value="<%= email %>">
+
+            <%# Display any messages passed from the server %>
+            <% if (locals.message) { %>
+                <p class="error"><%= locals.message %></p>
+            <% } %>
+            
+            <p id="statusMessage" class="hidden"></p>
+            
+            <div>
+                <label for="newUsername">New Username:</label>
+                <input type="text" id="newUsername" required>
+            </div>
+
+            <div>
+                <label for="password">Confirm Password:</label>
+                <input type="password" id="password" required>
+            </div>
+    
+            <button id="updateUsernameBtn">Update Username</button>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('updateUsernameBtn').addEventListener('click', function() {
+            const email = document.getElementById('email').value;
+            const newUsername = document.getElementById('newUsername').value;
+            const password = document.getElementById('password').value;
+            
+            fetch('/update-username', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ email, newUsername, password })
+            })
+            .then(response => response.json())
+            .then(data => {
+                const message = document.getElementById('statusMessage');
+                message.textContent = data.message;
+                message.classList.remove('hidden');
+                message.classList.add(data.success ? 'success' : 'error');
+
+                // Hide message after 3 seconds
+                setTimeout(() => {
+                    message.classList.add('hidden');
+                }, 3000);
+            })
+            .catch(err => {
+                console.error('Error updating username:', err);
+                const message = document.getElementById('statusMessage');
+                message.textContent = 'Error updating username';
+                message.classList.remove('hidden');
+                message.classList.add('error');
+            });
+        });
+    </script>
+</body>
+</html>
