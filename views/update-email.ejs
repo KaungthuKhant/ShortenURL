@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Update Email</title>
+    <link rel="stylesheet" href="/auth-styles.css">
+</head>
+<body>
+    <a href="/">
+        <img src="/images/SnipItBG2.png" alt="SnipIt Logo" class="logo">
+    </a>
+    
+    <div class="auth-container">
+        <h1>Update Email</h1>
+
+        <% if (messages.error) { %>
+            <p class="error"><%= messages.error %></p>
+        <% } %>
+
+        <div id="form">
+            <input type="hidden" id="currentEmail" value="<%= currentEmail %>">
+
+            <%# Display any messages passed from the server %>
+            <% if (locals.message) { %>
+                <p class="error"><%= locals.message %></p>
+            <% } %>
+
+            <p id="errorMessage" class="error" style="display: none;"></p>
+            
+            <div>
+                <label for="newEmail">New Email:</label>
+                <input type="email" id="newEmail" required>
+            </div>
+            
+            <div>
+                <label for="password">Confirm Password:</label>
+                <input type="password" id="password" required>
+            </div>
+    
+            <button type="button" onclick="updateEmail()">Update Email</button>
+        </div>
+    </div>
+
+    <script>
+        const newEmailInput = document.getElementById('newEmail');
+        
+        // Remove red border when user edits email
+        newEmailInput.addEventListener('input', function() {
+            this.style.border = '';
+            document.getElementById('errorMessage').style.display = 'none';
+        });
+
+        function updateEmail() {
+            const newEmail = document.getElementById('newEmail').value;
+            const password = document.getElementById('password').value;
+            const errorMessage = document.getElementById('errorMessage');
+
+            // Basic email validation
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(newEmail)) {
+                errorMessage.textContent = 'Please enter a valid email address';
+                errorMessage.style.display = 'block';
+                errorMessage.style.color = 'red';
+                newEmailInput.style.border = '2px solid red';
+                return;
+            }
+
+            // Send request to server
+            fetch('/update-email', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    newEmail,
+                    password
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    errorMessage.textContent = data.message;
+                    errorMessage.style.display = 'block';
+                    errorMessage.style.color = 'green';
+                    // Clear inputs on success
+                    newEmailInput.value = '';
+                    document.getElementById('password').value = '';
+                } else {
+                    errorMessage.textContent = data.message;
+                    errorMessage.style.display = 'block';
+                    errorMessage.style.color = 'red';
+                }
+            })
+            .catch(error => {
+                errorMessage.textContent = 'An error occurred. Please try again.';
+                errorMessage.style.display = 'block';
+                errorMessage.style.color = 'red';
+                console.error('Error:', error);
+            });
+        }
+    </script>
+</body>
+</html>

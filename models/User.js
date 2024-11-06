@@ -36,11 +36,30 @@ const userSchema = new mongoose.Schema({
     },
     resetPasswordExpires: {
         type: Date,
-    }
+    },
+    pendingEmail: {
+        type: String,
+        required: false,
+    },
+    emailChangeConfirmationID: {
+        type: String,
+        required: false,
+    },
+    emailChangeExpires: {
+        type: Date,
+        required: false,
+    },
 });
 
+// Update the updatedAt timestamp before saving
 userSchema.pre('save', function (next) {
     this.updatedAt = Date.now();
+    next();
+});
+
+// Update the updatedAt timestamp before updating
+userSchema.pre('findOneAndUpdate', function(next) {
+    this._update.updatedAt = Date.now();
     next();
 });
 

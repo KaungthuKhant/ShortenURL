@@ -57,12 +57,29 @@ const transporter = nodemailer.createTransport({
     },
 });
 
-function sendConfirmationEmail(email, confirmationID) {
+function sendConfirmationEmail(email, confirmationID, type = 'registration') {
     const mailOptions = {
         from: emailUser,
         to: email,
         subject: 'Confirm Your Email',
         text: `Please click on this link to confirm your email: ${serverUrl}confirm/${confirmationID}`
+    };
+
+    transporter.sendMail(mailOptions, (error, info) => {
+        if (error) {
+            console.log(error);
+        } else {
+            console.log('Email sent: ' + info.response);
+        }
+    });
+}
+
+function sendEmailChangeConfirmation(email, confirmationID) {
+    const mailOptions = {
+        from: emailUser,
+        to: email,
+        subject: 'Confirm Your Email Change',
+        text: `Please click on this link to confirm your email change: ${serverUrl}confirm-email-change/${confirmationID}`
     };
 
     transporter.sendMail(mailOptions, (error, info) => {
@@ -112,5 +129,6 @@ module.exports = {
     checkUrlExists,
     checkPassword,
     sendConfirmationEmail,
+    sendEmailChangeConfirmation,
     sendClickCountReachedEmail
 };

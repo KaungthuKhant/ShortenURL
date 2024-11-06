@@ -21,7 +21,7 @@ const rateLimit = require('express-rate-limit');
 // Import local modules and configurations
 const User = require("./models/User");
 const Url = require("./models/Url");
-const { sendConfirmationEmail, sendClickCountReachedEmail, isValidUrl, checkUrlExists, checkPassword, checkSession } = require('./utils');
+const { sendConfirmationEmail, sendClickCountReachedEmail, isValidUrl, checkUrlExists, checkPassword, checkSession, sendEmailChangeConfirmation } = require('./utils');
 const { checkAuthenticated, checkNotAuthenticated, sessionTimeout } = require('./middleware');
 
 // Initialize Express app
@@ -705,6 +705,7 @@ app.post('/updateCustomMessage', async (req, res) => {
 app.get('/update-username', checkAuthenticated, (req, res) => {
     res.render('update-username.ejs', { 
         email: req.user.email,
+        username: req.user.name,
         message: null 
     });
 });
@@ -763,6 +764,234 @@ app.post('/update-username', checkAuthenticated, async (req, res) => {
 
 
 
+// Route: Update password page
+app.get('/update-password', checkAuthenticated, (req, res) => {
+    res.render('update-password.ejs', { 
+        email: req.user.email,
+        message: null 
+    });
+});
+
+// Route: Update password
+app.post('/update-password', checkAuthenticated, async (req, res) => {
+    const { email, currentPassword, newPassword, confirmPassword } = req.body;
+
+    console.log('Received update password request:', req.body);
+    try {
+        // Validate inputs
+        if (!email || !currentPassword || !newPassword || !confirmPassword) {
+            return res.json({ 
+                success: false, 
+                message: 'All fields are required' 
+            });
+        }
+
+        // Check if new passwords match
+        if (newPassword !== confirmPassword) {
+            return res.json({ 
+                success: false, 
+                message: 'New passwords do not match' 
+            });
+        }
+
+        // Validate password requirements
+        if (!checkPassword(newPassword)) {
+            return res.json({ 
+                success: false, 
+                message: 'Password must contain at least one uppercase letter, one lowercase letter, one number and 8 or more characters' 
+            });
+        }
+
+        console.log('Passwords validated successfully');
+
+        // Find user and verify current password
+        const user = await User.findOne({ email: email });
+        if (!user) {
+            return res.json({ success: false, message: 'User not found' });
+        }
+
+        // Check if current password is correct
+        const isValidPassword = await bcrypt.compare(currentPassword, user.password);
+        if (!isValidPassword) {
+            return res.json({ success: false, message: 'Current password is incorrect' });
+        }
+
+        console.log('Current password is correct');
+
+        // Hash new password
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+        // Update password
+        const updatedUser = await User.findOneAndUpdate(
+            { email: email },
+            { password: hashedPassword },
+            { new: true }
+        );
+
+        if (!updatedUser) {
+            return res.json({ 
+                success: false, 
+                message: 'Error updating password' 
+            });
+        }
+
+        console.log('Password updated successfully for:', email);
+        return res.json({ 
+            success: true, 
+            message: 'Password updated successfully' 
+        });
+
+    } catch (error) {
+        console.error('Error updating password:', error);
+        return res.json({ 
+            success: false, 
+            message: 'Error updating password' 
+        });
+    }
+});
+
+
+
+// Route: Update email page
+app.get('/update-email', checkAuthenticated, (req, res) => {
+    res.render('update-email.ejs', { 
+        currentEmail: req.user.email,
+        message: null 
+    });
+});
+
+// Route: Update email - Step 1: Verify and send confirmation
+app.post('/update-email', checkAuthenticated, async (req, res) => {
+    const { newEmail, password } = req.body;
+    const currentEmail = req.user.email;
+
+    console.log('Received update email request:', { currentEmail, newEmail });
+
+    try {
+        // Validate inputs
+        if (!newEmail || !password) {
+            return res.json({ 
+                success: false, 
+                message: 'All fields are required' 
+            });
+        }
+
+        // Find current user and verify password
+        const user = await User.findOne({ email: currentEmail });
+        if (!user) {
+            return res.json({ success: false, message: 'User not found' });
+        }
+
+        // Check if password is correct
+        const isValidPassword = await bcrypt.compare(password, user.password);
+        if (!isValidPassword) {
+            return res.json({ success: false, message: 'Incorrect password' });
+        }
+
+        console.log('Password verified successfully');
+
+        // Check if new email is already in use
+        const existingUser = await User.findOne({ email: newEmail });
+        if (existingUser) {
+            return res.json({ 
+                success: false, 
+                message: 'This email is already registered' 
+            });
+        }
+
+        // Generate new confirmation ID
+        const confirmationID = crypto.randomBytes(16).toString('hex');
+        
+        // Store the pending email change in the user document
+        const updatedUser = await User.findOneAndUpdate(
+            { email: currentEmail },
+            { 
+                pendingEmail: newEmail,
+                emailChangeConfirmationID: confirmationID,
+                emailChangeExpires: Date.now() + 3600000 // 1 hour expiration
+            },
+            { new: true }
+        );
+
+        if (!updatedUser) {
+            return res.json({ 
+                success: false, 
+                message: 'Error initiating email update' 
+            });
+        }
+
+        // Send confirmation email to new address
+        try {
+            await sendEmailChangeConfirmation(newEmail, confirmationID);
+            console.log('Confirmation email sent to:', newEmail);
+            
+            return res.json({ 
+                success: true, 
+                message: 'Please check your new email address for confirmation' 
+            });
+        } catch (emailError) {
+            // If email fails to send, remove pending change
+            await User.findOneAndUpdate(
+                { email: currentEmail },
+                { 
+                    $unset: { 
+                        pendingEmail: "",
+                        emailChangeConfirmationID: "",
+                        emailChangeExpires: ""
+                    }
+                }
+            );
+            
+            return res.json({ 
+                success: false, 
+                message: 'Failed to send confirmation email. Please verify the email address and try again.' 
+            });
+        }
+
+    } catch (error) {
+        console.error('Error in email update process:', error);
+        return res.json({ 
+            success: false, 
+            message: 'Error processing email update request' 
+        });
+    }
+});
+
+// Route: Confirm email change
+app.get('/confirm-email-change/:confirmationID', async (req, res) => {
+    try {
+        const user = await User.findOne({ 
+            emailChangeConfirmationID: req.params.confirmationID,
+            emailChangeExpires: { $gt: Date.now() }
+        });
+
+        if (!user) {
+            return res.status(404).send('Email confirmation link is invalid or has expired.');
+        }
+
+        // Update the email
+        await User.findOneAndUpdate(
+            { _id: user._id },
+            { 
+                email: user.pendingEmail,
+                confirmed: true,
+                $unset: { 
+                    pendingEmail: "",
+                    emailChangeConfirmationID: "",
+                    emailChangeExpires: ""
+                }
+            }
+        );
+
+        console.log('Email updated successfully for user:', user._id);
+        req.session.message = 'Email updated successfully. You can now log in with your new email.';
+        return res.redirect('/login');
+
+    } catch (error) {
+        console.error('Error confirming email change:', error);
+        return res.status(404).send('Error confirming email change');
+    }
+});
 
 // Route: Check session validity
 app.get('/check-session', (req, res) => {
@@ -975,6 +1204,8 @@ async function resetPassword(req, res) {
     console.log('Password reset successfully for user:', user.email);
     res.send('Password reset successfully');
 } 
+
+
 
 // Start the server
 app.listen(process.env.PORT);
