@@ -367,7 +367,7 @@ app.get('/reset-password/:id', async (req, res) => {
         console.log('User not found for password reset:', id);
         return res.status(404).send('User not found');
     }
-    if (user.resetPasswordExpires < Date.now()) {
+    if (user.updateExpires < Date.now()) {
         console.log('Password reset link expired for user:', user.email);
         return res.status(400).send('Password reset link has expired');
     }
@@ -907,8 +907,8 @@ app.post('/update-email', checkAuthenticated, async (req, res) => {
             { email: currentEmail },
             { 
                 pendingEmail: newEmail,
-                emailChangeConfirmationID: confirmationID,
-                emailChangeExpires: Date.now() + 3600000 // 1 hour expiration
+                confirmationID: confirmationID,
+                updateExpires: Date.now() + 3600000 // 1 hour expiration
             },
             { new: true }
         );
@@ -936,8 +936,8 @@ app.post('/update-email', checkAuthenticated, async (req, res) => {
                 { 
                     $unset: { 
                         pendingEmail: "",
-                        emailChangeConfirmationID: "",
-                        emailChangeExpires: ""
+                        confirmationID: "",
+                        updateExpires: ""
                     }
                 }
             );
@@ -961,8 +961,8 @@ app.post('/update-email', checkAuthenticated, async (req, res) => {
 app.get('/confirm-email-change/:confirmationID', async (req, res) => {
     try {
         const user = await User.findOne({ 
-            emailChangeConfirmationID: req.params.confirmationID,
-            emailChangeExpires: { $gt: Date.now() }
+            confirmationID: req.params.confirmationID,
+            updateExpires: { $gt: Date.now() }
         });
 
         if (!user) {
@@ -977,8 +977,8 @@ app.get('/confirm-email-change/:confirmationID', async (req, res) => {
                 confirmed: true,
                 $unset: { 
                     pendingEmail: "",
-                    emailChangeConfirmationID: "",
-                    emailChangeExpires: ""
+                    confirmationID: "",
+                    updateExpires: ""
                 }
             }
         );
@@ -1140,7 +1140,7 @@ async function forgotPassword(req, res) {
     // Generate a random reset token
     const randomID = crypto.randomBytes(32).toString('hex');
     user.confirmationID = randomID;
-    user.resetPasswordExpires = Date.now() + 600000; // 10 minutes
+    user.updateExpires = Date.now() + 600000; // 10 minutes
     await user.save();
     
     // Create the reset link

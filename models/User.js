@@ -34,19 +34,11 @@ const userSchema = new mongoose.Schema({
     confirmationID: {
         type: String,
     },
-    resetPasswordExpires: {
+    updateExpires: {
         type: Date,
     },
     pendingEmail: {
         type: String,
-        required: false,
-    },
-    emailChangeConfirmationID: {
-        type: String,
-        required: false,
-    },
-    emailChangeExpires: {
-        type: Date,
         required: false,
     },
 });
