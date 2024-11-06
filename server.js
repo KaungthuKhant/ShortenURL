@@ -17,6 +17,7 @@ const crypto = require('crypto');
 const QRCode = require('qrcode');
 const mongoose = require("mongoose");
 const rateLimit = require('express-rate-limit');
+const MongoStore = require('connect-mongo');
 
 // Import local modules and configurations
 const User = require("./models/User");
@@ -63,13 +64,23 @@ app.use(session({
         // if secure is false, the cookie will be sent over HTTP
         secure: process.env.NODE_ENV === 'production', 
         maxAge: parseInt(process.env.SESSION_TIMEOUT) * 60 * 1000 // Convert minutes to milliseconds
-    }
+    },
+    // Store the session in the database
+    // Otherwise, the session will be stored in server memory so when the server restarts, the session will be lost
+    store: MongoStore.create({
+        mongoUrl: process.env.MONGODB_URI,
+        touchAfter: 24 * 3600 // 24 hours
+    })
 }));
 app.use('/authenticated-routes', sessionTimeout); // Apply to all routes that require authentication
 app.use(passport.initialize());
 app.use(passport.session());
 app.use(methodOverride('_method'));
 app.use(express.static('public'));
+
+// Add request size limits
+app.use(express.json({ limit: '10kb' }));
+app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 
 // Middleware to disable DNS prefetching for all routes
 app.use((req, res, next) => {
