@@ -290,6 +290,7 @@ app.post('/login', passport.authenticate('local', {
     failureRedirect: '/login', 
     failureFlash: true
 }), (req, res) => {
+    console.log("Login successful");
     req.session.lastActivity = Date.now();
     res.redirect('/');
 });
@@ -1006,7 +1007,6 @@ app.get('/confirm-email-change/:confirmationID', async (req, res) => {
 
 // Route: Check session validity
 app.get('/check-session', (req, res) => {
-    console.log('Checking session validity');
     const sessionStatus = checkSession(req);
     if (sessionStatus.destroy) {
         req.session.destroy((err) => {
