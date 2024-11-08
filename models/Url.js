@@ -62,4 +62,3 @@ urlSchema.pre('save', function (next) {
 const Url = mongoose.model("Url", urlSchema);
 
 module.exports = Url;
-
