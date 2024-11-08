@@ -412,9 +412,9 @@ app.post('/shortUrls', async (req, res) => {
 
 
     if (shortUrl == "") {
-        shortUrl = crypto.randomBytes(3).toString('hex');
+        shortUrl = crypto.randomBytes(4).toString('hex');
         while (await Url.findOne({ shortUrl: shortUrl })) {
-            shortUrl = crypto.randomBytes(3).toString('hex');
+            shortUrl = crypto.randomBytes(4).toString('hex');
         }
     }
 
