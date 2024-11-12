@@ -28,6 +28,9 @@ const { checkAuthenticated, checkNotAuthenticated, sessionTimeout } = require('.
 // Initialize Express app
 const app = express();
 
+//trust proxy
+app.set('trust proxy', 1);
+
 // Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI);
 console.log('Connected to MongoDB');
