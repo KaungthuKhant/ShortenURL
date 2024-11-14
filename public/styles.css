@@ -340,9 +340,16 @@ a:hover {
 /* Profile dropdown styles */
 .profile-container {
     position: fixed;
-    top: 20px;
-    right: 20px;
+    top: 0;
+    right: 0;
     z-index: 1000;
+    height: 100vh;  /* Full viewport height */
+    width: 100%;    /* Full viewport width */
+    display: flex;
+    justify-content: flex-end;  /* Keep content aligned to right */
+    align-items: flex-start;    /* Keep content aligned to top */
+    padding: 20px;              /* Match body padding */
+    pointer-events: none;       /* Allow clicks to pass through container */
 }
 
 .profile-button {
