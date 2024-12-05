@@ -61,9 +61,10 @@
         </thead>
         <tbody id="urlTableBody">
             <% urls.forEach(shortUrl => { %>
+                <% console.log('Full Short URL:', shortUrl.fullShortUrl) %>
                 <tr style="height: 10px;">
                     <td style="vertical-align: middle;"><a href="<%= shortUrl.fullUrl %>"><%= shortUrl.fullUrl %></a></td>
-                    <td style="vertical-align: middle;"><a href="<%= shortUrl.shortUrl %>"><%= `${req.protocol}://${req.get('host')}/${shortUrl.shortUrl}` %></a></td>
+                    <td style="vertical-align: middle;"><a href="<%= shortUrl.fullShortUrl %>"><%= shortUrl.fullShortUrl %></a></td>
                     <td style="vertical-align: middle;"><%= shortUrl.clicks %></td>
                     <td style="vertical-align: middle;">
                         <button class="action-button details-button" data-short-url="<%= shortUrl.shortUrl %>">
@@ -76,7 +77,7 @@
                         </button>
                     </td>
                     <td style="vertical-align: middle;">
-                        <button class="action-button copy-button" data-clipboard-text="<%= `${req.protocol}://${req.get('host')}/${shortUrl.shortUrl}` %>">
+                        <button class="action-button copy-button" data-clipboard-text="<%= shortUrl.fullShortUrl %>">
                             <i class="fas fa-copy"></i>
                         </button>
                     </td> 
@@ -154,14 +155,16 @@
         function updateTable(urls) {
             const tableBody = document.getElementById('urlTableBody');
             tableBody.innerHTML = '';
+
+            // Log the URLs to the console
+            console.log(urls);
             
             urls.forEach(url => {
-                const fullShortUrl = `${window.location.protocol}//${window.location.host}/${url.shortUrl}`;
                 const row = document.createElement('tr');
                 row.style.height = '10px';
                 row.innerHTML = `
                     <td style="vertical-align: middle;"><a href="${url.fullUrl}">${url.fullUrl}</a></td>
-                    <td style="vertical-align: middle;"><a href="${fullShortUrl}">${url.shortUrl}</a></td>
+                    <td style="vertical-align: middle;"><a href="${url.fullShortUrl}">${url.fullShortUrl}</a></td>
                     <td style="vertical-align: middle;">${url.clicks}</td>
                     <td style="vertical-align: middle;">
                         <button class="action-button details-button" data-short-url="${url.shortUrl}">
@@ -174,7 +177,7 @@
                         </button>
                     </td>
                     <td style="vertical-align: middle;">
-                        <button class="action-button copy-button" data-clipboard-text="${fullShortUrl}">
+                        <button class="action-button copy-button" data-clipboard-text="${url.fullShortUrl}">
                             <i class="fas fa-copy"></i>
                         </button>
                     </td>

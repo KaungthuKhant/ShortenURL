@@ -167,13 +167,26 @@ async function saveLink(fullLink, shortLink, userId) {
 
 // Route: Home page
 app.get('/', checkAuthenticated, async (req, res) => {
-    const links = await Url.find({ userId: req.user._id });
-    res.render('index.ejs', { 
-        req: req,
-        name: req.user.name, 
-        email: req.user.email, 
-        urls: links
-    });
+    try {
+        // Get all links for the user
+        const links = await Url.find({ userId: req.user._id });
+        
+        // Transform the links to include fullShortUrl
+        const urlsWithFullPath = links.map(link => ({
+            ...link.toObject(),
+            fullShortUrl: `${process.env.SERVER}${link.shortUrl}`
+        }));
+
+        // Render the page with the transformed URLs
+        res.render('index.ejs', { 
+            name: req.user.name, 
+            email: req.user.email, 
+            urls: urlsWithFullPath
+        });
+    } catch (err) {
+        console.error('Error loading home page:', err);
+        res.status(500).send('Error loading page');
+    }
 });
 
 
@@ -202,8 +215,27 @@ app.post('/checkURL', async (req, res) => {
 // Route: Fetch URLs for authenticated user
 app.get('/fetch-urls', checkAuthenticated, async (req, res) => {
     try {
+        // 1. Find all links for this user
         const links = await Url.find({ userId: req.user._id });
-        res.json({ urls: links });
+
+        // 2. Transform each link to include the full URL
+        const urlsWithFullPath = links.map(link => {
+            // Convert mongoose document to plain object
+            const plainLink = link.toObject();
+            
+            // Create the full short URL by combining server address and short URL
+            const fullShortUrl = process.env.SERVER + plainLink.shortUrl;
+
+            // Return a new object with all original properties plus the full short URL
+            return {
+                ...plainLink,           // Spread operator: copies all properties from plainLink
+                fullShortUrl: fullShortUrl  // Add the new fullShortUrl property
+            };
+        });
+
+        // 3. Send the transformed URLs back to the client
+        res.json({ urls: urlsWithFullPath });
+
     } catch (err) {
         console.error('Error fetching URLs:', err);
         res.status(500).json({ error: 'Failed to fetch URLs' });

@@ -442,11 +442,11 @@ a:hover {
 
 /* Table column width controls */
 table th:nth-child(1) {  /* Full URL column */
-    width: calc(100% - 540px);  /* Automatically takes remaining space minus other columns */
+    width: calc(100% - 590px);  /* Automatically takes remaining space minus other columns */
 }
 
 table th:nth-child(2) {  /* Short URL column */
-    width: 300px;        /* Increased from 150px to 200px */
+    width: 350px;        /* Increased from 150px to 200px */
 }
 
 table th:nth-child(3),   /* Clicks column */
