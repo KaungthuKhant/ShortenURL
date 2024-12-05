@@ -439,3 +439,28 @@ a:hover {
 .hidden {
     display: none;
 }
+
+/* Table column width controls */
+table th:nth-child(1) {  /* Full URL column */
+    width: calc(100% - 540px);  /* Automatically takes remaining space minus other columns */
+}
+
+table th:nth-child(2) {  /* Short URL column */
+    width: 300px;        /* Increased from 150px to 200px */
+}
+
+table th:nth-child(3),   /* Clicks column */
+table th:nth-child(4),   /* Details column */
+table th:nth-child(5),   /* Delete column */
+table th:nth-child(6) {  /* Copy column */
+    width: 60px;
+}
+
+/* Ensure cells maintain header widths */
+table td {
+    width: inherit;
+    max-width: 0;        /* Enables text truncation */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}

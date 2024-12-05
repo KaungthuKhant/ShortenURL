@@ -52,18 +52,18 @@
         <thead>
             <tr>
                 <th>Full URL</th>
-                <th style="width: 150px;">Short URL</th>
-                <th style="width: 60px;">Clicks</th>
-                <th style="width: 60px;">Details</th>
-                <th style="width: 60px;">Delete</th>
-                <th style="width: 60px;">Copy</th>
+                <th>Short URL</th>
+                <th>Clicks</th>
+                <th>Details</th>
+                <th>Delete</th>
+                <th>Copy</th>
             </tr>
         </thead>
         <tbody id="urlTableBody">
             <% urls.forEach(shortUrl => { %>
                 <tr style="height: 10px;">
                     <td style="vertical-align: middle;"><a href="<%= shortUrl.fullUrl %>"><%= shortUrl.fullUrl %></a></td>
-                    <td style="vertical-align: middle;"><a href="<%= shortUrl.shortUrl %>"><%= shortUrl.shortUrl %></a></td>
+                    <td style="vertical-align: middle;"><a href="<%= shortUrl.shortUrl %>"><%= `${req.protocol}://${req.get('host')}/${shortUrl.shortUrl}` %></a></td>
                     <td style="vertical-align: middle;"><%= shortUrl.clicks %></td>
                     <td style="vertical-align: middle;">
                         <button class="action-button details-button" data-short-url="<%= shortUrl.shortUrl %>">
