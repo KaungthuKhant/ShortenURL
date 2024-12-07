@@ -3,7 +3,6 @@ if (process.env.NODE_ENV !== 'production') {
     require('dotenv').config();
 }
 
-
 // Import required modules
 const express = require('express');
 const bcrypt = require('bcrypt');
@@ -18,6 +17,7 @@ const QRCode = require('qrcode');
 const mongoose = require("mongoose");
 const rateLimit = require('express-rate-limit');
 const MongoStore = require('connect-mongo');
+const axios = require('axios');
 
 // Import local modules and configurations
 const User = require("./models/User");
@@ -441,22 +441,69 @@ app.get('/auth/google/callback',
     }
 );
 
+
+/**
+ * Function to check if a URL is malicious
+ * @param {string} url - The URL to check
+ * @returns {Promise<boolean>} - Returns true if URL is safe, false if malicious
+ */
+async function isSafeUrl(url) {
+    const apiUrl = `https://safebrowsing.googleapis.com/v4/threatMatches:find?key=${process.env.GOOGLE_SAFE_BROWSING_API_KEY}`;
+    const body = {
+        client: {
+            clientId: "ShortenURL",
+            clientVersion: "1.0.0"
+        },
+        threatInfo: {
+            threatTypes: ["MALWARE", "SOCIAL_ENGINEERING"],
+            platformTypes: ["ANY_PLATFORM"],
+            threatEntryTypes: ["URL"],
+            threatEntries: [{ url }]
+        }
+    };
+
+    try {
+        const { data } = await axios.post(apiUrl, body);
+        console.log('API Response:', data);
+
+        // An empty response (no matches) means the URL is safe
+        // If there are matches, the URL is unsafe
+        return !data.matches; // Returns true if safe (no matches), false if unsafe
+    } catch (error) {
+        console.error("Safe Browsing API Error Details:", {
+            status: error.response?.status,
+            statusText: error.response?.statusText,
+            data: error.response?.data,
+            message: error.message
+        });
+        // Default to safe in case of API errors
+        return true;
+    }
+}
+
 // Route: Create short URL
 
 app.post('/shortUrls', async (req, res) => {
     let { fullUrl, shortUrl, userEmail } = req.body;
 
+    // Add https:// if it's missing
+    if (!/^https?:\/\//i.test(fullUrl)) {
+        fullUrl = 'https://' + fullUrl.replace(/^(www\.)?/, 'www.');
+    }
+
+    // Check if the URL is malicious
+    const isSafe = await isSafeUrl(fullUrl);
+    if (!isSafe) {
+        console.log('URL is malicious:', fullUrl);
+        return res.status(400).json({ error: 'This URL has been identified as potentially malicious and cannot be shortened.' });
+    }
+    console.log('URL is safe:', fullUrl);
 
     if (shortUrl == "") {
         shortUrl = crypto.randomBytes(4).toString('hex');
         while (await Url.findOne({ shortUrl: shortUrl })) {
             shortUrl = crypto.randomBytes(4).toString('hex');
         }
-    }
-
-    // Add https:// if it's missing
-    if (!/^https?:\/\//i.test(fullUrl)) {
-        fullUrl = 'https://' + fullUrl.replace(/^(www\.)?/, 'www.');
     }
 
     // Check if the short URL is reserved
