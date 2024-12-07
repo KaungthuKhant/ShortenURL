@@ -553,7 +553,14 @@ app.post('/shortUrls', async (req, res) => {
 
         // Fetch all URLs for this user to send back
         const urls = await Url.find({ userId: userId });
-        res.json({ success: true, urls: urls });
+
+        // Transform the urls to include fullShortUrl
+        const urlsWithFullPath = urls.map(link => ({
+            ...link.toObject(),
+            fullShortUrl: `${process.env.SERVER}${link.shortUrl}`
+        }));
+
+        res.json({ success: true, urls: urlsWithFullPath });
     } catch (error) {
         console.error('Error creating short URL:', error);
         res.status(500).json({
@@ -571,8 +578,14 @@ app.delete('/delete-url', checkAuthenticated, async (req, res) => {
         
         // Fetch updated URLs
         const urls = await Url.find({ userId: req.user._id });
+
+        // Transform the urls to include fullShortUrl
+        const urlsWithFullPath = urls.map(link => ({
+            ...link.toObject(),
+            fullShortUrl: `${process.env.SERVER}${link.shortUrl}`
+        }));
         
-        res.json({ success: true, urls: urls });
+        res.json({ success: true, urls: urlsWithFullPath });
     } catch (error) {
         console.error('Error deleting URL:', error);
         res.status(500).json({ success: false, error: 'Failed to delete URL' });
