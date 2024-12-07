@@ -420,33 +420,32 @@ async function isSafeUrl(url) {
     const body = {
         client: {
             clientId: "ShortenURL",
-            clientVersion: "1.0.0",
+            clientVersion: "1.0.0"
         },
         threatInfo: {
-            threatTypes: [
-                "MALWARE",
-                "SOCIAL_ENGINEERING",
-                "UNWANTED_SOFTWARE",
-                "POTENTIALLY_HARMFUL_APPLICATION"
-            ],
-            platformTypes: ["WINDOWS", "LINUX", "OSX"],
+            threatTypes: ["MALWARE", "SOCIAL_ENGINEERING"],
+            platformTypes: ["ANY_PLATFORM"],
             threatEntryTypes: ["URL"],
-            threatEntries: [
-                { url: url }
-            ]
+            threatEntries: [{ url }]
         }
     };
 
-    console.log("API Request Body:", JSON.stringify(body, null, 2));
-
-
     try {
         const { data } = await axios.post(apiUrl, body);
-        console.log('Safe Browsing API Response:', data);
-        return data.matches ? true : false; // True if phishing
+        console.log('API Response:', data);
+
+        // An empty response (no matches) means the URL is safe
+        // If there are matches, the URL is unsafe
+        return !data.matches; // Returns true if safe (no matches), false if unsafe
     } catch (error) {
-        console.error("Safe Browsing API Error:", error.message);
-        return false;
+        console.error("Safe Browsing API Error Details:", {
+            status: error.response?.status,
+            statusText: error.response?.statusText,
+            data: error.response?.data,
+            message: error.message
+        });
+        // Default to safe in case of API errors
+        return true;
     }
 }
 

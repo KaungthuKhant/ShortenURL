@@ -149,6 +149,27 @@
                     errorMessageDiv.style.display = 'block';
                 });
             });
+
+            // Profile dropdown functionality
+            const profileButton = document.getElementById('profileButton');
+            const profileDropdown = document.getElementById('profileDropdown');
+
+            if (profileButton && profileDropdown) {  // Add null check
+                profileButton.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    profileDropdown.classList.toggle('hidden');
+                    console.log('Profile button clicked'); // Add debug logging
+                });
+
+                // Close dropdown when clicking outside
+                document.addEventListener('click', (e) => {
+                    if (!profileDropdown.contains(e.target) && !profileButton.contains(e.target)) {
+                        profileDropdown.classList.add('hidden');
+                    }
+                });
+            } else {
+                console.error('Profile button or dropdown not found');
+            }
         });
 
         function updateTable(urls) {
@@ -323,22 +344,6 @@
                 })
                 .catch(err => console.error('Error fetching updated data:', err));
         }
-
-        // Profile dropdown functionality
-        const profileButton = document.getElementById('profileButton');
-        const profileDropdown = document.getElementById('profileDropdown');
-
-        profileButton.addEventListener('click', (e) => {
-            e.stopPropagation();
-            profileDropdown.classList.toggle('hidden');
-        });
-
-        // Close dropdown when clicking outside
-        document.addEventListener('click', (e) => {
-            if (!profileDropdown.contains(e.target) && !profileButton.contains(e.target)) {
-                profileDropdown.classList.add('hidden');
-            }
-        });
     </script>
 </body>
 </html>
