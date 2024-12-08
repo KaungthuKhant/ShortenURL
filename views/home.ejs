@@ -21,16 +21,12 @@
             <h2>Welcome to URL Shortener</h2>
             <p>Our application allows you to create short, easy-to-share links. Features include:</p>
             <ul>
-                <li>Custom short URLs and QR code generation</li>
-                <li>Click tracking and analytics</li>
-                <li>URL expiration dates with customizable settings</li>
+                <li>Custom short URLs and QR code generation with click tracking and analytics</li>
+                <li>URL expiration dates with customizable settings and email reminders</li>
                 <li>Email notifications for click count milestones</li>
-                <li>Email reminders for URLs about to expire</li>
-                <li>Password protection for sensitive links</li>
-                <li>Custom messages for password-protected URLs</li>
+                <li>Password protection for sensitive links with custom messages</li>
                 <li>Redirection limit to control link usage</li>
-                <li>Ability to update full URL, short URL, and other settings</li>
-                <li>Option to delete shortened URLs</li>
+                <li>Full control over URLs: update, customize settings, or delete</li>
             </ul>
 
         <section id="urlChecker">
@@ -40,6 +36,23 @@
                 <button id="checkBtn">Check</button>
             </div>
             <p id="resultMessage" class="hidden"></p>
+        </section>
+
+        <section id="reportUrl">
+            <h3>Report a URL</h3>
+            <div class="input-group">
+                <input type="text" id="reportUrlInput" placeholder="Enter URL to report">
+                <select id="reportReason">
+                    <option value="">Select reason</option>
+                    <option value="broken">Broken Link</option>
+                    <option value="malicious">Malicious Content</option>
+                    <option value="spam">Spam</option>
+                    <option value="other">Other</option>
+                </select>
+                <textarea id="reportDescription" placeholder="Details (optional)" rows="3"></textarea>
+                <button id="reportBtn">Report URL</button>
+            </div>
+            <p id="reportMessage" class="hidden"></p>
         </section>
     </main>
 

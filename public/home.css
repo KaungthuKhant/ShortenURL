@@ -80,13 +80,13 @@ nav button:hover::after {
 }
 
 main {
-    max-width: 800px;
-    margin: 2rem auto;
+    max-width: 1000px;
+    margin: 1rem auto;
     padding: 0 1rem;
     transition: transform 0.3s ease;
 }
 
-#intro, #urlChecker {
+#intro, #urlChecker, #reportUrl {
     background-color: #2c3e50;
     padding: 1rem;
     margin-bottom: 1rem;
@@ -231,4 +231,82 @@ ul li:hover:before {
 @keyframes slideIn {
     from { transform: translateY(-20px); }
     to { transform: translateY(0); }
+}
+
+#reportUrl .input-group {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 1rem;
+}
+
+#reportUrlInput {
+    flex: 2;
+    padding: 0.7rem;
+    font-size: 1rem;
+    border: 1px solid #34495e;
+    border-radius: 5px;
+    transition: all 0.3s ease;
+    background-color: #34495e;
+    color: #ecf0f1;
+    height: 40px;
+    box-sizing: border-box;
+}
+
+#reportReason {
+    flex: 1;
+    padding: 0.7rem;
+    height: 40px;
+    font-size: 1rem;
+    border: 1px solid #34495e;
+    border-radius: 5px;
+    transition: all 0.3s ease;
+    background-color: #34495e;
+    color: #ecf0f1;
+    cursor: pointer;
+    box-sizing: border-box;
+}
+
+#reportDescription {
+    flex: 2;
+    padding: 0.7rem;
+    height: 40px;
+    font-size: 1rem;
+    border: 1px solid #34495e;
+    border-radius: 5px;
+    transition: all 0.3s ease;
+    background-color: #34495e;
+    color: #ecf0f1;
+    resize: none;
+    box-sizing: border-box;
+    overflow-y: auto;
+}
+
+#reportBtn {
+    height: 40px;
+    padding: 0 1rem;
+    font-size: 1rem;
+    background-color: #3498db;
+    color: #ecf0f1;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+    box-sizing: border-box;
+}
+
+#reportUrlInput:focus,
+#reportReason:focus,
+#reportDescription:focus {
+    outline: none;
+    border-color: #3498db;
+    box-shadow: 0 0 5px rgba(52, 152, 219, 0.5);
+}
+
+#reportBtn:hover {
+    background-color: #2980b9;
+    transform: translateY(-2px);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
 }
