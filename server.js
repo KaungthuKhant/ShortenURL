@@ -22,6 +22,7 @@ const axios = require('axios');
 // Import local modules and configurations
 const User = require("./models/User");
 const Url = require("./models/Url");
+const Report = require("./models/Report");
 const { sendConfirmationEmail, sendClickCountReachedEmail, isValidUrl, checkUrlExists, checkPassword, checkSession, sendEmailChangeConfirmation } = require('./utils');
 const { checkAuthenticated, checkNotAuthenticated, sessionTimeout } = require('./middleware');
 
@@ -1410,5 +1411,68 @@ async function sendExpirationReminders() {
 setInterval(sendExpirationReminders, 12 * 60 * 60 * 1000);   
 // Run the expired URL function every hour
 setInterval(checkForExpiredUrls, 60 * 60 * 1000);
+
+// Route: Create a new report
+app.post('/api/reports', async (req, res) => {
+    const { reportedUrl, reportType, description } = req.body;
+    
+    try {
+        // Extract shortUrl from the full URL
+        const shortUrlAbbr = reportedUrl.replace(process.env.SERVER, "");
+        
+        // Find the URL in our database
+        const url = await Url.findOne({ shortUrl: shortUrlAbbr });
+        
+        if (!url) {
+            return res.status(404).json({
+                success: false,
+                message: 'This URL was not found in our system.'
+            });
+        }
+
+        // Create new report
+        const report = new Report({
+            reportedUrl: reportedUrl,
+            urlId: url._id,
+            urlOwner: url.userId,
+            reportType,
+            description,
+            reportedBy: req.user ? req.user._id : null // Optional: logged-in user
+        });
+
+        await report.save();
+
+        // If it's a broken link report, notify the owner
+        if (reportType === 'broken') {
+            const owner = await User.findById(url.userId);
+            if (owner && owner.email) {
+                const mailOptions = {
+                    from: process.env.EMAIL_USER,
+                    to: owner.email,
+                    subject: 'Your Shortened URL Has Been Reported as Broken',
+                    text: `Your shortened URL (${reportedUrl}) has been reported as broken.\n\n` +
+                          `Original URL: ${url.fullUrl}\n` +
+                          `Additional details: ${description || 'No additional details provided'}\n\n` +
+                          `Please check if your URL is working correctly.`
+                };
+
+                transporter.sendMail(mailOptions);
+            }
+        }
+
+        // Return success response
+        return res.status(201).json({
+            success: true,
+            message: 'Thank you for your report. We will review it shortly.'
+        });
+
+    } catch (error) {
+        console.error('Error creating report:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'An error occurred while processing your report.'
+        });
+    }
+});
 
 

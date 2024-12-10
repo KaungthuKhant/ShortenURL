@@ -85,6 +85,44 @@
 
             resultMessage.classList.remove('hidden');
         });
+
+        document.getElementById('reportBtn').addEventListener('click', async () => {
+            const reportUrlInput = document.getElementById('reportUrlInput').value;
+            const reportReason = document.getElementById('reportReason').value;
+            const reportDescription = document.getElementById('reportDescription').value;
+            const reportMessage = document.getElementById('reportMessage');
+
+            try {
+                const response = await fetch('/api/reports', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        reportedUrl: reportUrlInput,
+                        reportType: reportReason,
+                        description: reportDescription
+                    }),
+                });
+                const data = await response.json();
+
+                // Display the response message
+                reportMessage.textContent = data.message;
+                reportMessage.classList.remove('hidden');
+                reportMessage.classList.toggle('error', !data.success);
+
+                // Clear form if successful
+                if (data.success) {
+                    document.getElementById('reportUrlInput').value = '';
+                    document.getElementById('reportReason').value = '';
+                    document.getElementById('reportDescription').value = '';
+                }
+            } catch (error) {
+                reportMessage.textContent = 'An error occurred while submitting the report.';
+                reportMessage.classList.remove('hidden');
+                reportMessage.classList.add('error');
+            }
+        });
     </script>
 </body>
 </html>
