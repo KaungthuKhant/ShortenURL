@@ -1412,11 +1412,55 @@ setInterval(sendExpirationReminders, 12 * 60 * 60 * 1000);
 // Run the expired URL function every hour
 setInterval(checkForExpiredUrls, 60 * 60 * 1000);
 
+// Rate limiter specifically for reports
+const reportLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 5, // limit each IP to 5 reports per windowMs
+    message: {
+        success: false,
+        message: 'Too many reports submitted. Please try again later.'
+    }
+});
+
+// Sanitize function for user input
+const sanitizeInput = (str) => {
+    if (!str) return '';
+    return str
+        .replace(/[<>]/g, '') // Remove < and > to prevent HTML injection
+        .trim()
+        .slice(0, 1000); // Limit length
+};
+
 // Route: Create a new report
-app.post('/api/reports', async (req, res) => {
+app.post('/api/reports', reportLimiter, async (req, res) => {
     const { reportedUrl, reportType, description } = req.body;
     
     try {
+        // Input validation
+        if (!reportedUrl || !reportType) {
+            return res.status(400).json({
+                success: false,
+                message: 'URL and report type are required.'
+            });
+        }
+
+        // Validate report type
+        const validReportTypes = ['broken', 'malicious', 'spam', 'other'];
+        if (!validReportTypes.includes(reportType)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid report type.'
+            });
+        }
+
+        // Validate URL format
+        if (!isValidUrl(reportedUrl)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid URL format.'
+            });
+        }
+
         // Extract shortUrl from the full URL
         const shortUrlAbbr = reportedUrl.replace(process.env.SERVER, "");
         
@@ -1430,14 +1474,21 @@ app.post('/api/reports', async (req, res) => {
             });
         }
 
-        // check to see if a report already exists
-        const existingReport = await Report.findOne({ reportedUrl: reportedUrl });
-        if (existingReport) {
+        // Check for existing reports in the last 24 hours
+        const recentReport = await Report.findOne({
+            reportedUrl: reportedUrl,
+            createdAt: { $gt: new Date(Date.now() - 24 * 60 * 60 * 1000) }
+        });
+
+        if (recentReport) {
             return res.status(400).json({
                 success: false,
-                message: 'A report for this URL already exists.'
+                message: 'This URL has already been reported in the last 24 hours.'
             });
         }
+
+        // Sanitize description
+        const sanitizedDescription = sanitizeInput(description);
 
         // Create new report
         const report = new Report({
@@ -1445,21 +1496,14 @@ app.post('/api/reports', async (req, res) => {
             urlId: url._id,
             urlOwner: url.userId,
             reportType,
-            description,
-            reportedBy: req.user ? req.user._id : null // Optional: logged-in user
+            description: sanitizedDescription,
+            reportedBy: req.user ? req.user._id : null
         });
 
         await report.save();
 
-        // If it's a broken link report, notify the owner
+        // Handle broken link reports
         if (reportType === 'broken') {
-            // check to see if the owner has already been notified
-            if (report.ownerNotified) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'The owner has already been notified about this broken link.'
-                });
-            }
             const owner = await User.findById(url.userId);
             if (owner && owner.email) {
                 const mailOptions = {
@@ -1468,15 +1512,18 @@ app.post('/api/reports', async (req, res) => {
                     subject: 'Your Shortened URL Has Been Reported as Broken',
                     text: `Your shortened URL (${reportedUrl}) has been reported as broken.\n\n` +
                           `Original URL: ${url.fullUrl}\n` +
-                          `Additional details: ${description || 'No additional details provided'}\n\n` +
+                          `Additional details: ${sanitizedDescription || 'No additional details provided'}\n\n` +
                           `Please check if your URL is working correctly.`
                 };
 
                 transporter.sendMail(mailOptions);
+                
+                // Update report to indicate owner was notified
+                report.ownerNotified = true;
+                await report.save();
             }
         }
 
-        // Return success response
         return res.status(201).json({
             success: true,
             message: 'Thank you for your report. We will review it shortly.'
