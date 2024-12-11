@@ -1430,6 +1430,15 @@ app.post('/api/reports', async (req, res) => {
             });
         }
 
+        // check to see if a report already exists
+        const existingReport = await Report.findOne({ reportedUrl: reportedUrl });
+        if (existingReport) {
+            return res.status(400).json({
+                success: false,
+                message: 'A report for this URL already exists.'
+            });
+        }
+
         // Create new report
         const report = new Report({
             reportedUrl: reportedUrl,
@@ -1444,6 +1453,13 @@ app.post('/api/reports', async (req, res) => {
 
         // If it's a broken link report, notify the owner
         if (reportType === 'broken') {
+            // check to see if the owner has already been notified
+            if (report.ownerNotified) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'The owner has already been notified about this broken link.'
+                });
+            }
             const owner = await User.findById(url.userId);
             if (owner && owner.email) {
                 const mailOptions = {
