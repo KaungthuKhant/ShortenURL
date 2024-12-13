@@ -467,3 +467,23 @@ table td {
     text-overflow: ellipsis;
     white-space: nowrap;
 }
+
+.reported-row {
+    background-color: rgba(241, 196, 15, 0.2) !important;
+    cursor: help;
+}
+
+.reported-row:hover::after {
+    content: attr(title);
+    position: absolute;
+    background: #34495e;
+    color: #ecf0f1;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 14px;
+    white-space: nowrap;
+    z-index: 1000;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    pointer-events: none;
+    margin-top: -30px;
+}

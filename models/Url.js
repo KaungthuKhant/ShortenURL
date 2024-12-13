@@ -54,7 +54,7 @@ const urlSchema = new mongoose.Schema({
     },
     restriction: {
         type: String,
-        enum: ['none', 'reported', 'restricted'],
+        enum: ['none', 'reported', 'restricted', 'safe'],
         default: 'none'
     }
 });             
