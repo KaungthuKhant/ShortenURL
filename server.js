@@ -1133,9 +1133,9 @@ const transporter = nodemailer.createTransport({
 });
 
 
-// Route: Redirect short URL to full URL
-app.get('/:shortUrl', async (req, res) => {
-    /* The following lines prevent the browser from prefetching the URL.
+
+
+/* The following lines prevent the browser from prefetching the URL.
      * When the user pastes a link in the browser, the browser might prefetch the URL,
      * causing this route to be called and increasing the click count by one.
      * When the user actually clicks enter and goes to the shortUrl, this route gets called again,
@@ -1144,8 +1144,11 @@ app.get('/:shortUrl', async (req, res) => {
      * 
      * It's a hack, but it works.
      */
+
+// Route: Redirect short URL to full URL
+app.get('/:shortUrl', async (req, res) => {
+    /* Prevent browser prefetching */
     const purpose = req.get('Purpose') || req.get('X-Purpose');
-  
     if (purpose === 'prefetch' || purpose === 'preview') {
         return res.status(204).end();
     }
@@ -1158,10 +1161,46 @@ app.get('/:shortUrl', async (req, res) => {
         return res.sendStatus(404);
     }
 
+    // Check URL restriction status first
+    if (url.restriction !== 'none') {
+        const report = await Report.findOne({ 
+            urlId: url._id,
+            status: 'pending'
+        }).sort({ createdAt: -1 });  // Get most recent report
+
+        if (url.restriction === 'restricted') {
+            console.log('Restricted URL accessed:', req.params.shortUrl);
+            return res.render('restricted.ejs', {
+                shortUrl: process.env.SERVER + req.params.shortUrl,
+                message: 'This URL has been restricted due to reports of suspicious activity.',
+                reportType: report ? report.reportType : 'unknown',
+                reportedAt: report ? report.createdAt : null
+            });
+        }
+        
+        /*
+        if (url.restriction === 'reported') {
+            console.log('Reported URL accessed:', req.params.shortUrl);
+            return res.render('warning.ejs', {
+                shortUrl: process.env.SERVER + req.params.shortUrl,
+                message: 'This URL has been reported as potentially problematic.',
+                reportType: report ? report.reportType : 'unknown',
+                reportedAt: report ? report.createdAt : null,
+                fullUrl: url.fullUrl,
+                customMessage: url.customMessage
+            });
+        }
+        */
+    }
+
     // Check if the URL is password protected
     if (url.password) {
         console.log('Password protected URL:', req.params.shortUrl);
-        return res.render('urlPassword.ejs', { shortUrl: req.params.shortUrl, message: "Please enter the password to access this URL.", customMessage: url.customMessage });
+        return res.render('urlPassword.ejs', { 
+            shortUrl: req.params.shortUrl, 
+            message: "Please enter the password to access this URL.", 
+            customMessage: url.customMessage 
+        });
     }
 
     // If not password protected, proceed with redirection
@@ -1179,7 +1218,9 @@ app.get('/:shortUrl', async (req, res) => {
     // Check if the redirection limit has been reached
     if (result.clicks > result.redirectionLimit) {
         console.log('Redirection limit reached for:', req.params.shortUrl);
-        return res.render('limitReached', { shortUrl: process.env.SERVER + req.params.shortUrl });
+        return res.render('limitReached', { 
+            shortUrl: process.env.SERVER + req.params.shortUrl 
+        });
     }
 
     // All checks passed, redirect to the full URL
@@ -1501,6 +1542,12 @@ app.post('/api/reports', reportLimiter, async (req, res) => {
         });
 
         await report.save();
+
+        // Update URL restriction if it's not already restricted
+        if (url.restriction === 'none') {
+            url.restriction = 'reported';
+            await url.save();
+        }
 
         // Handle broken link reports
         if (reportType === 'broken') {

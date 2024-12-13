@@ -51,7 +51,12 @@ const urlSchema = new mongoose.Schema({
     },
     customMessage: {
         type: String
-    }             
+    },
+    restriction: {
+        type: String,
+        enum: ['none', 'reported', 'restricted'],
+        default: 'none'
+    }
 });             
 
 urlSchema.pre('save', function (next) {

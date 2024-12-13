@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URL Warning</title>
+    <link rel="stylesheet" href="/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <h1><i class="fas fa-exclamation-triangle" style="color: #f1c40f;"></i> Warning</h1>
+        <div class="message">
+            <p><%= message %></p>
+            <p>Short URL: <strong><%= shortUrl %></strong></p>
+            <p>Redirects to: <strong class="full-url"><%= fullUrl %></strong></p>
+            <% if (reportType) { %>
+                <p>Report Type: <strong><%= reportType %></strong></p>
+            <% } %>
+            <% if (reportedAt) { %>
+                <p>Reported: <strong><%= new Date(reportedAt).toLocaleString() %></strong></p>
+            <% } %>
+            <% if (customMessage) { %>
+                <p>Message from URL owner: <strong><%= customMessage %></strong></p>
+            <% } %>
+        </div>
+        <div class="links-container">
+            <p>Do you still want to proceed to this URL?</p>
+            <div class="button-group">
+                <a href="<%= fullUrl %>" class="button proceed">Yes, Continue</a>
+                <a href="/" class="button cancel">No, Go Back</a>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .container {
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #34495e;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        .message {
+            background-color: #2c3e50;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            word-wrap: break-word;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .button {
+            display: inline-block;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+            font-weight: bold;
+        }
+
+        .proceed {
+            background-color: #e67e22;
+            color: #ecf0f1;
+        }
+
+        .proceed:hover {
+            background-color: #d35400;
+            transform: translateY(-2px);
+        }
+
+        .cancel {
+            background-color: #7f8c8d;
+            color: #ecf0f1;
+        }
+
+        .cancel:hover {
+            background-color: #95a5a6;
+            transform: translateY(-2px);
+        }
+
+        h1 {
+            text-align: center;
+            color: #ecf0f1;
+            margin-bottom: 20px;
+        }
+
+        .fa-exclamation-triangle {
+            margin-right: 10px;
+        }
+
+        strong {
+            color: #3498db;
+        }
+
+        .full-url {
+            word-break: break-all;
+            color: #e74c3c;
+        }
+    </style>
+</body>
+</html>
