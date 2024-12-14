@@ -64,8 +64,8 @@
                 <% console.log('Full Short URL:', shortUrl.fullShortUrl) %>
                 <tr style="height: 10px;" 
                     class="<%= (shortUrl.restriction !== 'none' && shortUrl.restriction !== 'safe') ? 'reported-row' : '' %>"
-                    title="<%= shortUrl.restriction === 'reported' ? 'This URL has been reported and is under review' : 
-                           shortUrl.restriction === 'restricted' ? 'This URL has been restricted due to unresolved reports' : '' %>">
+                    data-tooltip="<%= shortUrl.restriction === 'reported' ? 'This URL has been reported and is under review' : 
+                               shortUrl.restriction === 'restricted' ? 'This URL has been restricted due to unresolved reports' : '' %>">
                     <td style="vertical-align: middle;"><a href="<%= shortUrl.fullUrl %>"><%= shortUrl.fullUrl %></a></td>
                     <td style="vertical-align: middle;"><a href="<%= shortUrl.fullShortUrl %>"><%= shortUrl.fullShortUrl %></a></td>
                     <td style="vertical-align: middle;"><%= shortUrl.clicks %></td>
@@ -184,19 +184,14 @@
                 const row = document.createElement('tr');
                 row.style.height = '10px';
                 
-                // Add the reported-row class and tooltip if restricted
                 if (url.restriction !== 'none' && url.restriction !== 'safe') {
                     row.classList.add('reported-row');
                     
-                    // Set tooltip based on restriction type
                     const tooltipText = url.restriction === 'reported' 
                         ? 'This URL has been reported and is under review'
                         : 'This URL has been restricted due to unresolved reports';
                     
-                    row.title = tooltipText;
-                    
-                    // Optional: Add aria-label for accessibility
-                    row.setAttribute('aria-label', tooltipText);
+                    row.setAttribute('data-tooltip', tooltipText);
                 }
                 
                 row.innerHTML = `
