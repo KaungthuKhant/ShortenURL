@@ -1,5 +1,4 @@
 function checkAuthenticated(req, res, next) {
-    console.log("Checking authentication");
     if (req.isAuthenticated()) {
         return next();
     }

@@ -61,7 +61,6 @@
         </thead>
         <tbody id="urlTableBody">
             <% urls.forEach(shortUrl => { %>
-                <% console.log('Full Short URL:', shortUrl.fullShortUrl) %>
                 <tr style="height: 10px;" 
                     class="<%= (shortUrl.restriction !== 'none' && shortUrl.restriction !== 'safe') ? 'reported-row' : '' %>"
                     data-tooltip="<%= shortUrl.restriction === 'reported' ? 'This URL has been reported and is under review' : 
@@ -162,7 +161,6 @@
                 profileButton.addEventListener('click', (e) => {
                     e.stopPropagation();
                     profileDropdown.classList.toggle('hidden');
-                    console.log('Profile button clicked'); // Add debug logging
                 });
 
                 // Close dropdown when clicking outside
@@ -227,7 +225,6 @@
                 button.addEventListener('click', () => {
                     const shortUrl = button.getAttribute('data-clipboard-text');
                     navigator.clipboard.writeText(shortUrl).then(() => {
-                        console.log('Short URL copied to clipboard!');
                     }).catch(err => {
                         console.error('Error copying short URL to clipboard:', err);
                     });
@@ -254,7 +251,6 @@
                     // Handle confirm button click
                     const handleConfirm = async () => {
                         try {
-                            console.log('Attempting to delete:', shortUrl);
                             
                             const response = await fetch('/delete-url', {
                                 method: 'DELETE',
@@ -267,7 +263,6 @@
                             const data = await response.json();
                             
                             if (data.success) {
-                                console.log('Delete successful');
                                 updateTable(data.urls);
                                 localStorage.setItem('urlUpdated', 'true');
                             } else {
@@ -305,7 +300,6 @@
                 button.addEventListener('click', function(e) {
                     e.preventDefault();
                     const shortUrl = this.getAttribute('data-short-url');
-                    console.log("Calling details for: ", shortUrl);
                     window.open(`/url-details?shortUrl=${shortUrl}`, '_blank');
                 });
             });

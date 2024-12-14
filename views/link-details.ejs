@@ -419,7 +419,6 @@
 
             // Handle Copy URL functionality
             document.getElementById('copyUrlBtn').addEventListener('click', function () {
-                console.log('Copy URL button clicked');
                 
                 // Dynamically get the updated short URL from the href attribute
                 const shortUrl = document.getElementById('shortUrlLink').href;
@@ -484,13 +483,11 @@
 
             // Handle Edit Full URL functionality
             document.getElementById('editFullUrlBtn').addEventListener('click', function () {
-                console.log("Edit Full URL button clicked");
                 document.getElementById('fullUrlLink').classList.add('hidden');
                 document.getElementById('fullUrlInput').classList.remove('hidden');
                 document.getElementById('editFullUrlBtn').classList.add('hidden');
                 document.getElementById('saveFullURLBtn').classList.remove('hidden');
                 document.getElementById('cancelFullUrlBtn').classList.remove('hidden');
-                console.log("Save Full URL button should now be visible");
             });
 
             // Handle Cancel Full URL functionality
@@ -524,7 +521,6 @@
 
             // Handle Save Full URLs functionality
             document.getElementById('saveFullURLBtn').addEventListener('click', function () {
-                console.log("Save Full URL button clicked");
                 const updatedFullUrl = document.getElementById('fullUrlInput').value;
                 const originalShortUrl = document.getElementById('originalShortUrl').value;
                     
