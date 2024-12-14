@@ -12,7 +12,7 @@
         <h1><i class="fas fa-exclamation-triangle" style="color: #f1c40f;"></i> Warning</h1>
         <div class="message">
             <p><%= message %></p>
-            <p>Short URL: <strong><%= shortUrl %></strong></p>
+            <p>Short URL: <strong><%= process.env.SERVER %><%= shortUrl %></strong></p>
             <p>Redirects to: <strong class="full-url"><%= fullUrl %></strong></p>
             <% if (reportType) { %>
                 <p>Report Type: <strong><%= reportType %></strong></p>
@@ -29,6 +29,12 @@
             <div class="button-group">
                 <a href="<%= fullUrl %>" class="button proceed">Yes, Continue</a>
                 <a href="/" class="button cancel">No, Go Back</a>
+            </div>
+            <div class="report-button-container" style="margin-top: 20px; text-align: center;">
+                <button onclick="window.location.href='/report?url=<%= process.env.SERVER %><%= shortUrl %>'" 
+                        class="button report">
+                    <i class="fas fa-flag"></i> Report this URL
+                </button>
             </div>
         </div>
     </div>
@@ -104,6 +110,17 @@
         .full-url {
             word-break: break-all;
             color: #e74c3c;
+        }
+
+        .report {
+            background-color: #e74c3c;
+            color: #ecf0f1;
+            margin-top: 10px;
+        }
+
+        .report:hover {
+            background-color: #c0392b;
+            transform: translateY(-2px);
         }
     </style>
 </body>

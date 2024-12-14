@@ -203,7 +203,16 @@ app.post('/checkURL', async (req, res) => {
     try {
         const url = await Url.findOne({ shortUrl: shortUrlAbbr });
         if (url) {
-            res.json({ success: true, fullUrl: url.fullUrl });
+            // Also check for any reports
+            const report = await Report.findOne({ shortUrl: shortUrlAbbr })
+                .sort({ createdAt: -1 });
+            
+            res.json({ 
+                success: true, 
+                fullUrl: url.fullUrl,
+                reported: report ? true : false,
+                reportType: report ? report.reportType : null
+            });
         } else {
             res.json({ success: false, message: 'Short URL not found' });
         }
@@ -1502,12 +1511,27 @@ app.post('/api/reports', reportLimiter, async (req, res) => {
             });
         }
 
-        // Extract shortUrl from the full URL
-        const shortUrlAbbr = reportedUrl.replace(process.env.SERVER, "");
-        
-        // Find the URL in our database
-        const url = await Url.findOne({ shortUrl: shortUrlAbbr });
-        
+        let url;
+        let finalReportedUrl;
+        let shortUrlIdentifier;
+
+        // Check if the reported URL is a short URL or full URL
+        if (reportedUrl.includes(process.env.SERVER)) {
+            // It's a short URL report
+            shortUrlIdentifier = reportedUrl.replace(process.env.SERVER, "");
+            url = await Url.findOne({ shortUrl: shortUrlIdentifier });
+            if (url) {
+                finalReportedUrl = url.fullUrl;
+            }
+        } else {
+            // It's a full URL report
+            finalReportedUrl = reportedUrl;
+            url = await Url.findOne({ fullUrl: reportedUrl });
+            if (url) {
+                shortUrlIdentifier = url.shortUrl;
+            }
+        }
+
         if (!url) {
             return res.status(404).json({
                 success: false,
@@ -1517,7 +1541,7 @@ app.post('/api/reports', reportLimiter, async (req, res) => {
 
         // Check for existing reports in the last 24 hours
         const recentReport = await Report.findOne({
-            reportedUrl: reportedUrl,
+            shortUrl: shortUrlIdentifier,
             createdAt: { $gt: new Date(Date.now() - 24 * 60 * 60 * 1000) }
         });
 
@@ -1533,7 +1557,8 @@ app.post('/api/reports', reportLimiter, async (req, res) => {
 
         // Create new report
         const report = new Report({
-            reportedUrl: reportedUrl,
+            reportedUrl: finalReportedUrl,
+            shortUrl: shortUrlIdentifier,
             urlId: url._id,
             urlOwner: url.userId,
             reportType,
@@ -1557,15 +1582,14 @@ app.post('/api/reports', reportLimiter, async (req, res) => {
                     from: process.env.EMAIL_USER,
                     to: owner.email,
                     subject: 'Your Shortened URL Has Been Reported as Broken',
-                    text: `Your shortened URL (${reportedUrl}) has been reported as broken.\n\n` +
-                          `Original URL: ${url.fullUrl}\n` +
+                    text: `Your shortened URL (${process.env.SERVER}${shortUrlIdentifier}) has been reported as broken.\n\n` +
+                          `Original URL: ${finalReportedUrl}\n` +
                           `Additional details: ${sanitizedDescription || 'No additional details provided'}\n\n` +
                           `Please check if your URL is working correctly.`
                 };
 
                 transporter.sendMail(mailOptions);
                 
-                // Update report to indicate owner was notified
                 report.ownerNotified = true;
                 await report.save();
             }

@@ -5,6 +5,10 @@ const reportSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    shortUrl: {
+        type: String,
+        required: true
+    },
     urlId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Url',
@@ -23,12 +27,12 @@ const reportSchema = new mongoose.Schema({
     reportedBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
-        required: false  // Optional for anonymous reports
+        required: false
     },
     description: {
         type: String,
         required: false,
-        maxLength: 1000  // Limit description length
+        maxLength: 1000
     },
     status: {
         type: String,
@@ -63,7 +67,6 @@ const reportSchema = new mongoose.Schema({
     }
 });
 
-// Update the updatedAt timestamp before saving
 reportSchema.pre('save', function (next) {
     this.updatedAt = Date.now();
     next();

@@ -186,8 +186,8 @@
                     row.classList.add('reported-row');
                     
                     const tooltipText = url.restriction === 'reported' 
-                        ? 'This URL has been reported and is under review'
-                        : 'This URL has been restricted due to unresolved reports';
+                        ? `This URL has been reported and is under review`
+                        : `This URL has been restricted due to unresolved reports`;
                     
                     row.setAttribute('data-tooltip', tooltipText);
                 }
