@@ -1474,9 +1474,9 @@ async function checkUnresolvedReports() {
         console.log('Starting daily report check...');
 
         const unresolvedReports = await Report.find({
-            status: 'pending',
-            reportType: { $ne: 'broken' },
-            createdAt: { 
+            status: 'pending',                      // report status is pending        
+            reportType: { $ne: 'broken' },          // report type is not broken
+            createdAt: {                            // Created more than 24 hours ago
                 $lt: new Date(Date.now() - 24 * 60 * 60 * 1000) 
             }
         });
@@ -1484,7 +1484,7 @@ async function checkUnresolvedReports() {
         console.log(`Found ${unresolvedReports.length} unresolved reports`);
 
         for (const report of unresolvedReports) {
-            const url = await Url.findById(report.urlId);
+            const url = await Url.findOne({ shortUrl: report.shortUrl });
             if (url && url.restriction !== 'restricted') {
                 url.restriction = 'restricted';
                 await url.save();
@@ -1502,6 +1502,8 @@ async function checkUnresolvedReports() {
 setInterval(sendExpirationReminders, 12 * 60 * 60 * 1000);   
 // Run the expired URL function every hour
 setInterval(checkForExpiredUrls, 60 * 60 * 1000);
+// Run the unresolved reports function every day
+setInterval(checkUnresolvedReports, 24 * 60 * 60 * 1000);
 
 // Rate limiter specifically for reports
 const reportLimiter = rateLimit({
