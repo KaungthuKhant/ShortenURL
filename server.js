@@ -509,6 +509,12 @@ app.post('/shortUrls', async (req, res) => {
     }
     console.log('URL is safe:', fullUrl);
 
+    // check if the full url is restricted
+    const url = await Url.findOne({ fullUrl: fullUrl });
+    if (url && url.restriction === 'restricted') {
+        return res.status(400).json({ error: 'This URL has been restricted. Please choose a different one.' });
+    }
+
     if (shortUrl == "") {
         shortUrl = crypto.randomBytes(4).toString('hex');
         while (await Url.findOne({ shortUrl: shortUrl })) {
@@ -1457,6 +1463,41 @@ async function sendExpirationReminders() {
     }
 }
 
+
+/**
+ * Function to check for unresolved reports and restrict URLs
+ * 
+ * This function runs periodically to find and restrict URLs that have unresolved reports.
+ */
+async function checkUnresolvedReports() {
+    try {
+        console.log('Starting daily report check...');
+
+        const unresolvedReports = await Report.find({
+            status: 'pending',
+            reportType: { $ne: 'broken' },
+            createdAt: { 
+                $lt: new Date(Date.now() - 24 * 60 * 60 * 1000) 
+            }
+        });
+
+        console.log(`Found ${unresolvedReports.length} unresolved reports`);
+
+        for (const report of unresolvedReports) {
+            const url = await Url.findById(report.urlId);
+            if (url && url.restriction !== 'restricted') {
+                url.restriction = 'restricted';
+                await url.save();
+                console.log(`Restricted URL: ${url.shortUrl}`);
+            }
+        }
+
+        console.log('Daily report check completed');
+    } catch (error) {
+        console.error('Error in daily report check:', error);
+    }
+}
+
 // Run the reminder function every 12 hours
 setInterval(sendExpirationReminders, 12 * 60 * 60 * 1000);   
 // Run the expired URL function every hour
@@ -1486,28 +1527,49 @@ app.post('/api/reports', reportLimiter, async (req, res) => {
     const { reportedUrl, reportType, description } = req.body;
     
     try {
-        // Input validation
-        if (!reportedUrl || !reportType) {
+        // Input validation with specific error messages
+        if (!reportedUrl && !reportType) {
             return res.status(400).json({
                 success: false,
-                message: 'URL and report type are required.'
+                message: 'Both URL and report type are required.',
+                errors: ['missing_url', 'missing_type']
+            });
+        }
+        
+        if (!reportedUrl) {
+            return res.status(400).json({
+                success: false,
+                message: 'URL is required.',
+                error: 'missing_url'
             });
         }
 
-        // Validate report type
+        if (!reportType) {
+            return res.status(400).json({
+                success: false,
+                message: 'Report type is required.',
+                error: 'missing_type'
+            });
+        }
+
+        // Validate report type with specific error
         const validReportTypes = ['broken', 'malicious', 'spam', 'other'];
         if (!validReportTypes.includes(reportType)) {
             return res.status(400).json({
                 success: false,
-                message: 'Invalid report type.'
+                message: `Invalid report type. Must be one of: ${validReportTypes.join(', ')}`,
+                error: 'invalid_report_type'
             });
         }
 
-        // Validate URL format
-        if (!isValidUrl(reportedUrl)) {
+        // Enhanced URL validation
+        try {
+            new URL(reportedUrl); // This will throw if URL is invalid
+        } catch (urlError) {
             return res.status(400).json({
                 success: false,
-                message: 'Invalid URL format.'
+                message: 'The provided URL is not valid.',
+                error: 'invalid_url_format'
             });
         }
 
@@ -1535,11 +1597,21 @@ app.post('/api/reports', reportLimiter, async (req, res) => {
         if (!url) {
             return res.status(404).json({
                 success: false,
-                message: 'This URL was not found in our system.'
+                message: 'This URL was not found in our system.',
+                error: 'url_not_found'
             });
         }
 
-        // Check for existing reports in the last 24 hours
+        // Check if URL is already restricted
+        if (url.restriction === 'restricted') {
+            return res.status(400).json({
+                success: false,
+                message: 'This URL has already been restricted.',
+                error: 'already_restricted'
+            });
+        }
+
+        // Check for existing reports with more detailed response
         const recentReport = await Report.findOne({
             shortUrl: shortUrlIdentifier,
             createdAt: { $gt: new Date(Date.now() - 24 * 60 * 60 * 1000) }
@@ -1548,63 +1620,92 @@ app.post('/api/reports', reportLimiter, async (req, res) => {
         if (recentReport) {
             return res.status(400).json({
                 success: false,
-                message: 'This URL has already been reported in the last 24 hours.'
+                message: 'This URL has already been reported in the last 24 hours.',
+                error: 'duplicate_report',
+                reportType: recentReport.reportType,
             });
         }
 
-        // Sanitize description
-        const sanitizedDescription = sanitizeInput(description);
-
-        // Create new report
-        const report = new Report({
-            reportedUrl: finalReportedUrl,
-            shortUrl: shortUrlIdentifier,
-            urlId: url._id,
-            urlOwner: url.userId,
-            reportType,
-            description: sanitizedDescription,
-            reportedBy: req.user ? req.user._id : null
-        });
-
-        await report.save();
-
-        // Update URL restriction if it's not already restricted
-        if (url.restriction === 'none') {
-            url.restriction = 'reported';
-            await url.save();
+        // Validate description length
+        if (description && description.length > 1000) {
+            return res.status(400).json({
+                success: false,
+                message: 'Description is too long. Maximum length is 1000 characters.',
+                error: 'description_too_long'
+            });
         }
 
-        // Handle broken link reports
-        if (reportType === 'broken') {
-            const owner = await User.findById(url.userId);
-            if (owner && owner.email) {
-                const mailOptions = {
-                    from: process.env.EMAIL_USER,
-                    to: owner.email,
-                    subject: 'Your Shortened URL Has Been Reported as Broken',
-                    text: `Your shortened URL (${process.env.SERVER}${shortUrlIdentifier}) has been reported as broken.\n\n` +
-                          `Original URL: ${finalReportedUrl}\n` +
-                          `Additional details: ${sanitizedDescription || 'No additional details provided'}\n\n` +
-                          `Please check if your URL is working correctly.`
-                };
+        // Create new report with try-catch for database operation
+        let report;
+        try {
+            report = new Report({
+                reportedUrl: finalReportedUrl,
+                shortUrl: shortUrlIdentifier,
+                urlId: url._id,
+                urlOwner: url.userId,
+                reportType,
+                description: sanitizeInput(description),
+                reportedBy: req.user ? req.user._id : null
+            });
 
-                transporter.sendMail(mailOptions);
-                
-                report.ownerNotified = true;
-                await report.save();
+            await report.save();
+        } catch (dbError) {
+            console.error('Database error while creating report:', dbError);
+            return res.status(500).json({
+                success: false,
+                message: 'Failed to create report.',
+                error: 'database_error'
+            });
+        }
+
+        // Update URL restriction with error handling
+        try {
+            if (url.restriction === 'none') {
+                url.restriction = 'reported';
+                await url.save();
+            }
+        } catch (updateError) {
+            console.error('Error updating URL restriction:', updateError);
+            // Don't return error - report was still created
+        }
+
+        // Handle email notifications with error handling
+        if (reportType === 'broken') {
+            try {
+                const owner = await User.findById(url.userId);
+                if (owner && owner.email) {
+                    const mailOptions = {
+                        from: process.env.EMAIL_USER,
+                        to: owner.email,
+                        subject: 'Your Shortened URL Has Been Reported as Broken',
+                        text: `Your shortened URL (${process.env.SERVER}${shortUrlIdentifier}) has been reported as broken.\n\n` +
+                              `Original URL: ${finalReportedUrl}\n` +
+                              `Additional details: ${description || 'No additional details provided'}\n\n` +
+                              `Please check if your URL is working correctly.`
+                    };
+
+                    await transporter.sendMail(mailOptions);
+                    report.ownerNotified = true;
+                    await report.save();
+                }
+            } catch (emailError) {
+                console.error('Error sending notification email:', emailError);
+                // Don't return error - report was still created
             }
         }
 
         return res.status(201).json({
             success: true,
-            message: 'Thank you for your report. We will review it shortly.'
+            message: 'Thank you for your report. We will review it shortly.',
+            reportId: report._id
         });
 
     } catch (error) {
-        console.error('Error creating report:', error);
+        console.error('Unexpected error in report creation:', error);
         return res.status(500).json({
             success: false,
-            message: 'An error occurred while processing your report.'
+            message: 'An unexpected error occurred while processing your report.',
+            error: 'server_error'
         });
     }
 });
