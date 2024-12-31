@@ -115,8 +115,19 @@
 
             document.getElementById('shortenForm').addEventListener('submit', function(e) {
                 e.preventDefault();
-                const fullUrl = document.getElementById('fullUrl').value;
-                const shortUrl = document.getElementById('shortUrl').value;
+                
+                // Reset border colors and box shadows for both inputs
+                const fullUrlInput = document.getElementById('fullUrl');
+                const shortUrlInput = document.getElementById('shortUrl');
+                
+                // Reset to default styles
+                fullUrlInput.style.borderColor = '#34495e';  // Default border color
+                fullUrlInput.style.boxShadow = 'none';
+                shortUrlInput.style.borderColor = '#34495e';  // Default border color
+                shortUrlInput.style.boxShadow = 'none';
+
+                const fullUrl = fullUrlInput.value;
+                const shortUrl = shortUrlInput.value;
                 const userEmail = document.getElementById('userEmail').value;
 
                 const data = {
